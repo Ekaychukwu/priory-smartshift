@@ -1,0 +1,213 @@
+{
+  "info": {
+    "_postman_id": "priory-smartshift-collection",
+    "name": "Priory SmartShift",
+    "description": "Collection for testing Priory SmartShift API endpoints.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Accept Shift",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/x-www-form-urlencoded"
+          }
+        ],
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            { "key": "From", "value": "whatsapp:+447700900001", "type": "text" },
+            { "key": "Body", "value": "ACCEPT SH001", "type": "text" }
+          ]
+        },
+        "url": {
+          "raw": "{{base_url}}/api/whatsapp/webhook",
+          "host": ["{{base_url}}"],
+          "path": ["api", "whatsapp", "webhook"]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Decline Shift",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/x-www-form-urlencoded"
+          }
+        ],
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            { "key": "From", "value": "whatsapp:+447700900001", "type": "text" },
+            { "key": "Body", "value": "DECLINE SH001", "type": "text" }
+          ]
+        },
+        "url": {
+          "raw": "{{base_url}}/api/whatsapp/webhook",
+          "host": ["{{base_url}}"],
+          "path": ["api", "whatsapp", "webhook"]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "List Shifts",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{base_url}}/api/shifts",
+          "host": ["{{base_url}}"],
+          "path": ["api", "shifts"]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Filter Open Shifts",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{base_url}}/api/shifts?status=Open",
+          "host": ["{{base_url}}"],
+          "path": ["api", "shifts"],
+          "query": [
+            { "key": "status", "value": "Open" }
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Fill Shift By ID",
+      "request": {
+        "method": "POST",
+        "url": {
+          "raw": "{{base_url}}/api/shifts/1/accept",
+          "host": ["{{base_url}}"],
+          "path": ["api", "shifts", "1", "accept"]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Wellbeing Analysis",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{base_url}}/api/wellbeing/analyze?text=Feeling%20stressed%20after%20shift",
+          "host": ["{{base_url}}"],
+          "path": ["api", "wellbeing", "analyze"],
+          "query": [
+            { "key": "text", "value": "Feeling stressed after shift" }
+          ]
+        }
+      },
+      "response": []
+    }
+    ,
+    {
+      "name": "Auth Login",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"admin@example.com\",\n  \"password\": \"adminpass\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/api/auth/login",
+          "host": ["{{base_url}}"],
+          "path": ["api", "auth", "login"]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "List Payroll Records",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{base_url}}/api/payroll",
+          "host": ["{{base_url}}"],
+          "path": ["api", "payroll"]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Generate Payroll",
+      "request": {
+        "method": "POST",
+        "url": {
+          "raw": "{{base_url}}/api/payroll/generate",
+          "host": ["{{base_url}}"],
+          "path": ["api", "payroll", "generate"]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Payroll Summary",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{base_url}}/api/payroll/summary",
+          "host": ["{{base_url}}"],
+          "path": ["api", "payroll", "summary"]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Daily Performance",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{base_url}}/api/performance/daily",
+          "host": ["{{base_url}}"],
+          "path": ["api", "performance", "daily"]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Performance Leaderboard",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{base_url}}/api/performance/leaderboard",
+          "host": ["{{base_url}}"],
+          "path": ["api", "performance", "leaderboard"]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "AI Payroll Summary",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{base_url}}/api/ai/payroll/summary",
+          "host": ["{{base_url}}"],
+          "path": ["api", "ai", "payroll", "summary"]
+        }
+      },
+      "response": []
+    }
+  ],
+  "event": [],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:3000"
+    }
+  ]
+}

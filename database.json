@@ -1,0 +1,177 @@
+{
+  "shifts": [
+    {
+      "id": 1,
+      "shift_ref": "SH001",
+      "ward": "Cardiology",
+      "role_required": "Nurse",
+      "status": "Open",
+      "shift_date": "2025-11-10T08:00:00Z",
+      "number_required": 2,
+      "number_filled": 1,
+      "organisation_id": 1
+    },
+    {
+      "id": 2,
+      "shift_ref": "SH002",
+      "ward": "Oncology",
+      "role_required": "Doctor",
+      "status": "Filled",
+      "shift_date": "2025-11-11T20:00:00Z",
+      "number_required": 1,
+      "number_filled": 1,
+      "organisation_id": 1
+    }
+  ],
+  "staff": [
+    {
+      "id": 1,
+      "name": "Alice Example",
+      "phone_number": "+447700900001",
+      "preferred_shift": "Day",
+      "wellbeing_score": 0,
+      "contracted_hours_per_week": 40,
+      "organisation_id": 1
+    },
+    {
+      "id": 2,
+      "name": "Bob Example",
+      "phone_number": "+447700900002",
+      "preferred_shift": "Night",
+      "wellbeing_score": 0,
+      "contracted_hours_per_week": 40,
+      "organisation_id": 1
+    },
+    {
+      "id": 3,
+      "name": "Charlie Staff",
+      "phone_number": "",
+      "preferred_shift": "Day",
+      "wellbeing_score": 0,
+      "contracted_hours_per_week": 40,
+      "organisation_id": 1
+    },
+    {
+      "id": 4,
+      "name": "Mary Manager",
+      "phone_number": "",
+      "preferred_shift": "Day",
+      "wellbeing_score": 0,
+      "contracted_hours_per_week": 40,
+      "organisation_id": 1
+    }
+  ],
+  "wellbeing_logs": [],
+  "shift_assignments": [
+    {
+      "staff_id": 3,
+      "shift_id": 1,
+      "accepted_at": "2025-11-07T04:19:07.497Z"
+    },
+    {
+      "staff_id": 4,
+      "shift_id": 2,
+      "accepted_at": "2025-11-07T04:19:13.672Z"
+    }
+  ],
+  "users": [
+    {
+      "id": 1,
+      "name": "Alice Admin",
+      "email": "admin@example.com",
+      "password_hash": "a4729b8f3362fcdb4091743096bc9e91:ddc868a2ee0c533b0c23e54afe32dbc848e7a9ef57952b624d99eea598f36466",
+      "role": "admin",
+      "staff_id": 1,
+      "organisation_id": 1
+    },
+    {
+      "id": 2,
+      "name": "Bob Staff",
+      "email": "staff@example.com",
+      "password_hash": "fd06c876890c6705ea0debb57f97959e:1c8d6f8111ae4d404eeef8b857707efb427ce5a4590f8dda1479e35bb5445cde",
+      "role": "staff",
+      "staff_id": 2,
+      "organisation_id": 1
+    },
+    {
+      "id": 3,
+      "name": "Test User",
+      "email": "test1@example.com",
+      "password_hash": "7ef1e36666189e0aed417d26b5fd832e:57987ed494658061188f733af6380f21e8ab4f09ca91f5050026ab5039255af3",
+      "role": "staff",
+      "staff_id": null,
+      "organisation_id": 1
+    },
+    {
+      "id": 4,
+      "name": "Charlie Staff",
+      "email": "charlie@example.com",
+      "password_hash": "045a01ba4429433a5024600412b3e863:baaa60a3bae552dee4a62ff96f2302828d5fdf3b4c6b5f0f6b7295d15d7a6e9a",
+      "role": "staff",
+      "staff_id": 3,
+      "organisation_id": 1
+    },
+    {
+      "id": 5,
+      "name": "Mary Manager",
+      "email": "manager@example.com",
+      "password_hash": "91ca5bcf7d0e26c6940d2f3f9a46308e:e9dcb201d35d51aa9a7fe43feef4b22aefdcde37894aeaf213b1fbd79dddef0f",
+      "role": "manager",
+      "staff_id": 4,
+      "organisation_id": 1
+    }
+  ],
+  "wellbeing_summaries": [
+    {
+      "id": 1,
+      "staff_id": 1,
+      "summary": "No recent messages.",
+      "score": 5,
+      "date": "2025-11-07"
+    },
+    {
+      "id": 2,
+      "staff_id": 2,
+      "summary": "No recent messages.",
+      "score": 5,
+      "date": "2025-11-07"
+    },
+    {
+      "id": 3,
+      "staff_id": 3,
+      "summary": "No recent messages.",
+      "score": 5,
+      "date": "2025-11-07"
+    },
+    {
+      "id": 4,
+      "staff_id": 4,
+      "summary": "No recent messages.",
+      "score": 5,
+      "date": "2025-11-07"
+    }
+  ],
+  "payroll_records": [],
+  "performance_metrics": [],
+  "organisations": [
+    {
+      "id": 1,
+      "name": "Priory Group",
+      "subdomain": "priory",
+      "address": "123 Priory Road, London",
+      "contact_email": "admin@priory.com",
+      "created_at": "2025-11-07T04:42:56.301Z"
+    }
+  ],
+  "organisation_billing": [
+    {
+      "organisation_id": 1,
+      "plan_type": "basic",
+      "active_users": 0,
+      "monthly_hours_logged": 0,
+      "total_cost": 0,
+      "next_billing_date": "2025-11-07"
+    }
+  ],
+  "reports": []
+}

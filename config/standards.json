@@ -1,0 +1,6 @@
+{
+  "min_staff_ratio": 0.33,
+  "max_overtime_rate": 0.10,
+  "max_avg_wellbeing_deviation": 2,
+  "training_completion_threshold": 0.90
+}
