@@ -173,5 +173,6 @@
       "next_billing_date": "2025-11-07"
     }
   ],
-  "reports": []
+  "reports": [],
+  "analytics_snapshots": []
 }
