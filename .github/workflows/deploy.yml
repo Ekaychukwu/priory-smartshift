@@ -1,0 +1,46 @@
+name: Priory SmartShift Deployment
+
+on:
+  push:
+    branches:
+      - main
+    tags:
+      - 'v*.*.*'    # deploy on version tags too
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Step 1: Check out repository
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # Step 2: Set up Node.js
+      - name: Use Node.js 20.x
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      # Step 3: Install dependencies
+      - name: Install dependencies
+        run: npm ci
+
+      # Step 4: Run basic test
+      - name: Run basic test
+        run: node -v
+
+      # Step 5: Deploy to Render via API
+      - name: Deploy to Render
+        env:
+          RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
+          SERVICE_ID: ${{ secrets.RENDER_SERVICE_ID }}
+        run: |
+          echo "Triggering Render deployment..."
+          curl -X POST \
+            -H "Accept: application/json" \
+            -H "Authorization: Bearer $RENDER_API_KEY" \
+            -H "Content-Type: application/json" \
+            -d "{\"serviceId\": \"$SERVICE_ID\"}" \
+            https://api.render.com/v1/services/$SERVICE_ID/deploys
