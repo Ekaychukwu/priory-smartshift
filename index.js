@@ -37,6 +37,7 @@ const payrollController = require('./src/controllers/payrollController');
 const performanceController = require('./src/controllers/performanceController');
 const reportController = require('./src/controllers/reportController');
 const analyticsController = require('./src/controllers/analyticsController');
+const insightController = require('./src/controllers/insightController');
 const { verifyJwt } = require('./src/utils/auth');
 const { db } = require('./src/utils/db');
 
@@ -164,6 +165,43 @@ const server = http.createServer(async (req, res) => {
       res.end(JSON.stringify(result));
       return;
     }
+    // --- Temporary AI Test Routes (for MVP validation only) ---
+    if (pathname === '/api/test/ai/predict' && method === 'GET') {
+      const result = analyticsController.predict(1, 7);
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify(result));
+      return;
+    }
+
+    if (pathname === '/api/test/ai/insight' && method === 'GET') {
+      const result = await analyticsController.insight(1);
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify(result));
+      return;
+    }
+// --- AI Wellbeing Insight (OpenAI) ---
+if (pathname === '/api/ai/insight' && method === 'GET') {
+  const result = await insightController.generateInsight(req, res);
+  return; // response is handled inside controller
+}
+// === AI Analytics Dashboard ===
+const analyticsDashboardController = require("./src/controllers/analyticsDashboardController");
+
+// Serve dashboard JSON summary
+if (pathname === "/api/ai/logs/summary" && method === "GET") {
+  const result = await analyticsDashboardController.getSummary();
+  res.writeHead(200, { "Content-Type": "application/json" });
+  res.end(JSON.stringify(result));
+  return;
+}
+
+// Serve dashboard HTML page
+if (pathname === "/dashboard/ai" && method === "GET") {
+  const html = analyticsDashboardController.getHTML();
+  res.writeHead(200, { "Content-Type": "text/html" });
+  res.end(html);
+  return;
+}
 
     // Fallback for unknown routes
     res.writeHead(404, { 'Content-Type': 'application/json' });
@@ -178,5 +216,21 @@ const server = http.createServer(async (req, res) => {
 
 // --- Start Server ---
 server.listen(PORT, () => {
-  console.log(`Priory SmartShift server listening on port ${PORT}`);
+  console.log(`✅ Priory SmartShift server listening on port ${PORT}`);
+});
+
+server.on("error", (err) => {
+  if (err.code === "EADDRINUSE") {
+    if (PORT === 3000) {
+      console.warn("⚠️ Port 3000 is busy — switching once to 3001...");
+      server.listen(3001, () => {
+        console.log("✅ Priory SmartShift now running on port 3001");
+      });
+    } else {
+      console.error("❌ Both 3000 and 3001 are busy. Please free the ports and restart.");
+      process.exit(1);
+    }
+  } else {
+    throw err;
+  }
 });

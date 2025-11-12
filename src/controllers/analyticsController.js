@@ -1,4 +1,7 @@
-const { db, insertRecord, save } = require('../utils/db');
+const dbModule = require('../utils/db');
+const db = dbModule.db;
+const insertRecord = dbModule.insertRecord;
+const save = dbModule.save;
 const { analyzeTone } = require('../services/openaiService');
 
 /**
