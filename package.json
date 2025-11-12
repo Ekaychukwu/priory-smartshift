@@ -3,7 +3,9 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "migrate:phase6": "psql \"$DATABASE_URL\" -f migrations/2025-11-12-phase6.sql || psql \"postgresql://postgres:postgres@localhost:5432/priory\" -f migrations/2025-11-12-phase6.sql",
+    "dev": "node index.js"
   },
   "keywords": [],
   "author": "",
@@ -12,10 +14,12 @@
   "dependencies": {
     "@google/generative-ai": "^0.24.1",
     "axios": "^1.13.2",
+    "bcrypt": "^6.0.0",
     "bcryptjs": "^3.0.3",
     "chart.js": "^4.5.1",
     "cors": "^2.8.5",
     "dotenv": "^17.2.3",
+    "express": "^5.1.0",
     "express-rate-limit": "^8.2.1",
     "jsonwebtoken": "^9.0.2",
     "openai": "^6.8.1",

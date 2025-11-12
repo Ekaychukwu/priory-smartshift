@@ -15,6 +15,8 @@ app.use('/api/auth', authRoutes);
 // JWT middleware (protects /api/* except auth + whatsapp)
 const authMiddleware = require('./src/middleware/auth');
 app.use(authMiddleware);
+const whatsappRoutes = require('./src/routes/whatsappRoutes');
+app.use('/api/whatsapp', whatsappRoutes);
 
 // Example protected route
 app.get('/api/ai/insight', (req, res) => {
