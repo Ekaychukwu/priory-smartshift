@@ -1,27 +1,39 @@
 // src/utils/db_postgres.js
-const { Pool } = require('pg');
+//
+// Central place to configure the PostgreSQL connection for Priory SmartShift.
+//
+// This version is VERY simple and always uses the DATABASE_URL from .env.
+// It does NOT hard-code any username like "smartshift".
+// It also loads .env itself, so it works no matter when it is imported.
+
 require('dotenv').config();
+const { Pool } = require('pg');
 
-const isLocal = process.env.NODE_ENV !== 'production';
+// Read the connection string from the environment.
+// Example (in .env):
+//   DATABASE_URL=postgresql://postgres:postgres@localhost:5432/priory_smartshift
+const connectionString = process.env.DATABASE_URL;
 
-const pool = new Pool({
-  connectionString:
-    process.env.DATABASE_URL ||
-    'postgresql://postgres:postgres@localhost:5432/priory',
-  ssl: isLocal
-    ? false
-    : {
-        rejectUnauthorized: false, // allows SSL in production
-      },
-});
-
-async function testConnection() {
-  try {
-    const res = await pool.query('SELECT NOW()');
-    console.log('✅ PostgreSQL connected:', res.rows[0].now);
-  } catch (err) {
-    console.error('❌ PostgreSQL connection failed:', err.message);
-  }
+if (!connectionString) {
+  console.error('❌ DATABASE_URL is not set in .env');
+  throw new Error('DATABASE_URL is required for PostgreSQL connection');
 }
 
-module.exports = { pool, testConnection };
+// Optional SSL support (useful if you later deploy to a cloud DB that needs SSL).
+// For local Docker Postgres, DB_SSL should be unset or "false".
+const useSsl = process.env.DB_SSL === 'true';
+
+const pool = new Pool({
+  connectionString,
+  ssl: useSsl
+    ? { rejectUnauthorized: false }
+    : false,
+});
+
+pool.on('error', (err) => {
+  console.error('Unexpected error on idle PostgreSQL client', err);
+});
+
+module.exports = {
+  pool,
+};

@@ -2,6 +2,7 @@
 
 const express = require('express');
 const path = require('path');
+const jwt = require('jsonwebtoken');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -10,41 +11,83 @@ const PORT = process.env.PORT || 3000;
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Serve static assets (login, dashboard, etc.)
+// Serve static assets
 app.use('/public', express.static(path.join(__dirname, 'public')));
 
-// --- Routes ---
-
-// 1) Auth routes (register + login) — public
+// ===============================
+// AUTH ROUTES (PUBLIC)
+// ===============================
 const authRoutes = require('./src/routes/authRoutes');
 app.use('/api/auth', authRoutes);
 
-// 2) JWT middleware — protects /api/* except auth + whatsapp webhook (handled inside middleware)
+// ===============================
+// DEV-ONLY TEST TOKEN ROUTE
+// ===============================
+app.get('/api/debug/test-token', (req, res) => {
+  try {
+    const secret = process.env.JWT_SECRET || 'dev-secret';
+
+    const payload = {
+      id: 999,
+      email: 'test.manager@priory-smartshift.local',
+      role: 'manager',
+      organisation_id: 1,
+    };
+
+    const token = jwt.sign(payload, secret, {
+      algorithm: 'HS256',
+      expiresIn: '7d',
+    });
+
+    return res.json({
+      info: 'DEV-ONLY token for testing protected endpoints. Do NOT use in production.',
+      token,
+      payload,
+    });
+  } catch (err) {
+    console.error('Error generating test token:', err);
+    return res.status(500).json({ error: 'Failed to generate test token' });
+  }
+});
+
+// ===============================
+// GLOBAL AUTH MIDDLEWARE
+// ===============================
 const authMiddleware = require('./src/middleware/auth');
 app.use(authMiddleware);
 
-// 3) WhatsApp routes (bot + webhook)
+// ===============================
+// WHATSAPP ROUTES
+// ===============================
 const whatsappRoutes = require('./src/routes/whatsappRoutes');
 app.use('/api/whatsapp', whatsappRoutes);
 
-// 4) Manager routes (AI shift automation, ranking, broadcasting)
+// ===============================
+// MANAGER ROUTES
+// ===============================
 const managerRoutes = require('./src/routes/managerRoutes');
 app.use('/api/manager', managerRoutes);
 
-// --- Example protected route to confirm JWT works ---
+// ===============================
+// SHIFT ROUTES
+// ===============================
+const shiftsRoutes = require('./src/routes/shiftsRoutes');
+app.use('/api/shifts', shiftsRoutes);
+
+// Debug test JWT-protected route
 app.get('/api/ai/insight', (req, res) => {
   res.json({
-    message: 'JWT-protected insight route working ✅',
+    message: 'JWT-protected insight route working',
     user: req.user || null,
   });
 });
 
-// --- Root health-check route ---
+// Health check
 app.get('/', (_req, res) => {
-  res.json({ message: 'Priory SmartShift Express API running ✅' });
+  res.json({ message: 'Priory SmartShift Express API running' });
 });
 
-// --- Start server ---
+// Start server
 app.listen(PORT, () => {
-  console.log(`✅ Server listening on port ${PORT}`);
+  console.log(`Server listening on port ${PORT}`);
 });

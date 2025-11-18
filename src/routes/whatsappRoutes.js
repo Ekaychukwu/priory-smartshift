@@ -1,364 +1,506 @@
+'use strict';
+
 const express = require('express');
-const { pool } = require('../utils/db_postgres');
-const { getOrCreateStaffByPhone, normalizePhone } = require('../services/staffDirectory');
-const { sendWhatsApp } = require('../services/twilioSender');
-
 const router = express.Router();
+const pool = require('../db');
+const { getOrCreateStaffByPhone } = require('../services/staffDirectory');
+const twilioSender = require('../services/twilioSender');
 
-/**
- * Helper: build the WhatsApp menu text.
- */
-function buildMenuText() {
-  return (
-    '�� Welcome to Priory SmartShift.\n\n' +
-    'Here are some things you can type:\n\n' +
-    '*checkin* – record that you have started your shift\n' +
-    '*checkout* – record that you have finished your shift\n' +
-    '*my shifts* – see your next few shifts\n' +
-    '*my week* or *rota* – summary of your upcoming week\n' +
-    '*insight today* – wellbeing / staffing insight\n' +
-    '*offers* – see your recent shift offers\n' +
-    '*last offer* – details of your last offer\n' +
-    '*accept* – accept your latest offer\n' +
-    '*decline* – decline your latest offer\n'
-  );
+// -------------------------
+// Helpers
+// -------------------------
+
+function normaliseWhatsAppNumber(fromRaw) {
+  if (!fromRaw) return '';
+  const s = String(fromRaw).trim();
+  // Twilio usually sends "whatsapp:+4479..."
+  return s.replace(/^whatsapp:/i, '');
 }
 
-/**
- * WhatsApp webhook (Twilio hits this).
- */
-router.post(
-  '/webhook',
-  express.urlencoded({ extended: false }),
-  async (req, res) => {
+async function replyWhatsApp(toPhone, message) {
+  const phone = String(toPhone || '').trim();
+  const body = String(message || '').trim();
+
+  if (!phone || !body) {
+    console.error('[Twilio] Cannot send WhatsApp message – missing phone or body', {
+      toPhone: phone,
+      bodyLength: body.length,
+    });
+    return;
+  }
+
+  try {
+    await twilioSender.sendWhatsAppMessage({
+      to: `whatsapp:${phone}`,
+      body,
+    });
+    console.log('[Twilio] WhatsApp message sent via API helper');
+  } catch (err) {
+    console.error('[Twilio] Failed to send WhatsApp reply:', err);
+  }
+}
+
+function formatShiftDate(dateStr) {
+  const d = new Date(dateStr);
+  return d.toLocaleDateString('en-GB', {
+    weekday: 'short',
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+  });
+}
+
+// -------------------------
+// Command Handlers
+// -------------------------
+
+async function handleMenuCommand(fromPhone) {
+  const menuText =
+    '📱 *Priory SmartShift – WhatsApp menu*\n\n' +
+    'Type any of the following commands:\n' +
+    '• 🧾 *MENU* or *HELP* – show this list\n' +
+    '• 🕒 *CHECKIN* – log your attendance at the start of a shift\n' +
+    '• 🏁 *CHECKOUT* – log your attendance at the end of a shift\n' +
+    '• 📅 *MY SHIFTS* – see your upcoming shifts\n' +
+    '• 📊 *INSIGHT TODAY* – staffing & wellbeing insight\n' +
+    '• ✅ *ACCEPT* – accept your latest shift offer\n' +
+    '• ❌ *DECLINE* – decline your latest shift offer\n';
+
+  await replyWhatsApp(fromPhone, menuText);
+}
+
+async function handleCheckinCommand(fromPhone, organisationId) {
+  console.log('[CHECKIN] Start for', fromPhone, 'org', organisationId);
+
+  const staff = await getOrCreateStaffByPhone(fromPhone, organisationId);
+  console.log('[CHECKIN] Staff record:', staff);
+
+  const { rows } = await pool.query(
+    `
+      SELECT id, staff_id, organisation_id, action, source, occurred_at
+      FROM attendance_logs
+      WHERE staff_id = $1 AND organisation_id = $2
+      ORDER BY occurred_at DESC
+      LIMIT 1
+    `,
+    [staff.id, organisationId]
+  );
+
+  const last = rows[0] || null;
+  console.log('[CHECKIN] Last log for staff', staff.id, last);
+
+  if (last && last.action === 'checkin') {
+    const msg =
+      '⚠️ You are already *checked in* for your current shift.\n\n' +
+      'If this seems wrong, please speak with your ward manager.';
+    await replyWhatsApp(fromPhone, msg);
+    return;
+  }
+
+  await pool.query(
+    `
+      INSERT INTO attendance_logs (staff_id, organisation_id, action, source, occurred_at, metadata)
+      VALUES ($1, $2, 'checkin', 'whatsapp', NOW(), '{}'::jsonb)
+    `,
+    [staff.id, organisationId]
+  );
+
+  const msg =
+    `✅ Thank you *${staff.name}*, your *check-in* has been recorded.\n\n` +
+    '🩺 Have a safe and productive shift.';
+  await replyWhatsApp(fromPhone, msg);
+}
+
+async function handleCheckoutCommand(fromPhone, organisationId) {
+  console.log('[CHECKOUT] Start for', fromPhone, 'org', organisationId);
+
+  const staff = await getOrCreateStaffByPhone(fromPhone, organisationId);
+  console.log('[CHECKOUT] Staff record:', staff);
+
+  const { rows } = await pool.query(
+    `
+      SELECT id, staff_id, organisation_id, action, source, occurred_at
+      FROM attendance_logs
+      WHERE staff_id = $1 AND organisation_id = $2
+      ORDER BY occurred_at DESC
+      LIMIT 1
+    `,
+    [staff.id, organisationId]
+  );
+
+  const last = rows[0] || null;
+  console.log('[CHECKOUT] Last log for staff', staff.id, last);
+
+  if (!last || last.action !== 'checkin') {
+    const msg =
+      "⚠️ You don't appear to be *currently checked in*.\n\n" +
+      'If this seems wrong, please speak with your ward manager.';
+    await replyWhatsApp(fromPhone, msg);
+    return;
+  }
+
+  await pool.query(
+    `
+      INSERT INTO attendance_logs (staff_id, organisation_id, action, source, occurred_at, metadata)
+      VALUES ($1, $2, 'checkout', 'whatsapp', NOW(), '{}'::jsonb)
+    `,
+    [staff.id, organisationId]
+  );
+
+  const msg =
+    `✅ Thank you *${staff.name}*, your *checkout* has been recorded.\n\n` +
+    '😌 Have a good rest after your shift.';
+  await replyWhatsApp(fromPhone, msg);
+}
+
+async function handleMyShiftsCommand(fromPhone, organisationId) {
+  const staff = await getOrCreateStaffByPhone(fromPhone, organisationId);
+  console.log('[MY SHIFTS] Staff record:', staff);
+
+  const { rows } = await pool.query(
+    `
+      SELECT
+        s.shift_date,
+        s.start_time,
+        s.end_time,
+        s.ward,
+        s.role_required,
+        s.status,
+        s.gender_required
+      FROM shift_assignments sa
+      JOIN shifts s ON s.id = sa.shift_id
+      WHERE sa.staff_id = $1
+      ORDER BY s.shift_date ASC, s.start_time ASC
+      LIMIT 5
+    `,
+    [staff.id]
+  );
+
+  if (rows.length === 0) {
+    const msg =
+      '📅 You have *no upcoming shifts* recorded in Priory SmartShift.\n\n' +
+      'If you believe this is wrong, please speak with your ward manager.';
+    await replyWhatsApp(fromPhone, msg);
+    return;
+  }
+
+  let text = `📅 *Here are your next ${rows.length} shift(s):*\n\n`;
+
+  for (const r of rows) {
+    const dateLabel = formatShiftDate(r.shift_date);
+    const start = String(r.start_time || '').slice(0, 5);
+    const end = String(r.end_time || '').slice(0, 5);
+
+    let genderLabel = '';
+    if (r.gender_required === 'male') {
+      genderLabel = '♂️ Male only';
+    } else if (r.gender_required === 'female') {
+      genderLabel = '♀️ Female only';
+    } else {
+      genderLabel = '⚧ Any gender';
+    }
+
+    text +=
+      `• ${dateLabel}\n` +
+      `  🏥 ${r.ward}\n` +
+      `  👩‍⚕️ ${r.role_required}\n` +
+      `  ⏰ ${start}–${end}\n` +
+      `  ⚧ ${genderLabel}  •  📌 ${r.status}\n\n`;
+  }
+
+  await replyWhatsApp(fromPhone, text.trim());
+}
+
+async function handleAcceptCommand(fromPhone, organisationId) {
+  const staff = await getOrCreateStaffByPhone(fromPhone, organisationId);
+  console.log('[ACCEPT] Staff record:', staff);
+
+  const { rows } = await pool.query(
+    `
+      SELECT *
+      FROM shift_offers
+      WHERE staff_id = $1
+        AND status = 'offered'
+      ORDER BY created_at DESC
+      LIMIT 1
+    `,
+    [staff.id]
+  );
+
+  const offer = rows[0];
+
+  if (!offer) {
+    const msg =
+      "ℹ️ I couldn't find any *pending shift offers* for you right now.\n\n" +
+      'If you believe this is wrong, please speak with your ward manager.';
+    await replyWhatsApp(fromPhone, msg);
+    return;
+  }
+
+  console.log('[ACCEPT] Latest offer row:', offer);
+
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+
+    await client.query(
+      `
+        UPDATE shift_offers
+        SET status = 'accepted',
+            responded_at = NOW()
+        WHERE id = $1
+      `,
+      [offer.id]
+    );
+
+    await client.query(
+      `
+        INSERT INTO shift_assignments (shift_id, staff_id, accepted_at)
+        VALUES ($1, $2, NOW())
+      `,
+      [offer.shift_id, staff.id]
+    );
+
+    await client.query(
+      `
+        UPDATE shifts
+        SET number_filled = number_filled + 1
+        WHERE id = $1
+      `,
+      [offer.shift_id]
+    );
+
+    await client.query('COMMIT');
+  } catch (err) {
+    await client.query('ROLLBACK');
+    console.error('[ACCEPT] Error in transaction:', err);
+    const msg =
+      '❌ Something went wrong while confirming your shift.\n\n' +
+      'Please try again or speak with your ward manager.';
+    await replyWhatsApp(fromPhone, msg);
+    return;
+  } finally {
+    client.release();
+  }
+
+  const msg =
+    `✅ Thank you *${staff.name}*, your shift has been *confirmed*.\n\n` +
+    'If your availability changes, please inform your ward manager as soon as possible.';
+  await replyWhatsApp(fromPhone, msg);
+}
+
+async function handleDeclineCommand(fromPhone, organisationId) {
+  const staff = await getOrCreateStaffByPhone(fromPhone, organisationId);
+  console.log('[DECLINE] Staff record:', staff);
+
+  const { rows } = await pool.query(
+    `
+      SELECT *
+      FROM shift_offers
+      WHERE staff_id = $1
+        AND status = 'offered'
+      ORDER BY created_at DESC
+      LIMIT 1
+    `,
+    [staff.id]
+  );
+
+  const offer = rows[0];
+
+  if (!offer) {
+    const msg =
+      "ℹ️ I couldn't find any *pending shift offers* for you right now.\n\n" +
+      'If you believe this is wrong, please speak with your ward manager.';
+    await replyWhatsApp(fromPhone, msg);
+    return;
+  }
+
+  await pool.query(
+    `
+      UPDATE shift_offers
+      SET status = 'declined',
+          responded_at = NOW()
+      WHERE id = $1
+    `,
+    [offer.id]
+  );
+
+  const msg =
+    `❌ Thanks *${staff.name}*, we've recorded that you *cannot work* this shift.\n\n` +
+    'Your manager may offer this shift to other staff.';
+  await replyWhatsApp(fromPhone, msg);
+}
+
+async function handleInsightTodayCommand(fromPhone, organisationId) {
+  console.log('[INSIGHT TODAY] Start for', fromPhone, 'org', organisationId);
+
+  try {
+    // Ward-level view
+    const wardRes = await pool.query(
+      `
+        SELECT
+          ward,
+          SUM(number_required) AS total_required,
+          SUM(number_filled)   AS total_filled
+        FROM shifts
+        WHERE organisation_id = $1
+        GROUP BY ward
+        ORDER BY ward
+        LIMIT 5
+      `,
+      [organisationId]
+    );
+
+    // Overall coverage
+    const overallRes = await pool.query(
+      `
+        SELECT
+          SUM(number_required) AS total_required,
+          SUM(number_filled)   AS total_filled
+        FROM shifts
+        WHERE organisation_id = $1
+      `,
+      [organisationId]
+    );
+
+    // Today’s check-ins
+    const attendanceRes = await pool.query(
+      `
+        SELECT COUNT(*) AS checkins_today
+        FROM attendance_logs
+        WHERE organisation_id = $1
+          AND action = 'checkin'
+          AND occurred_at::date = CURRENT_DATE
+      `,
+      [organisationId]
+    );
+
+    const wards = wardRes.rows;
+    const overall = overallRes.rows[0] || { total_required: 0, total_filled: 0 };
+    const checkinsToday = Number(attendanceRes.rows[0]?.checkins_today || 0);
+
+    const required = Number(overall.total_required || 0);
+    const filled = Number(overall.total_filled || 0);
+    const remaining = required - filled;
+
+    let text = '📊 *Priory SmartShift – Today’s staffing snapshot*\n\n';
+
+    // Ward-level bullets
+    if (wards.length > 0) {
+      text += '🏥 *Ward coverage (top 5):*\n';
+      for (const w of wards) {
+        const req = Number(w.total_required || 0);
+        const fil = Number(w.total_filled || 0);
+        const rem = req - fil;
+        const statusEmoji =
+          rem <= 0 ? '✅' : rem <= 2 ? '🟡' : '🔴';
+
+        text +=
+          `• ${statusEmoji} *${w.ward}* – req ${req}, filled ${fil}, remaining ${rem < 0 ? 0 : rem}\n`;
+      }
+      text += '\n';
+    } else {
+      text += '🏥 No shifts found yet for today.\n\n';
+    }
+
+    // Overall picture
+    text +=
+      '📦 *Overall cover (all wards):*\n' +
+      `• Required: ${required}\n` +
+      `• Filled:   ${filled}\n` +
+      `• Remaining: ${remaining < 0 ? 0 : remaining}\n\n`;
+
+    // Attendance
+    text +=
+      '🕒 *Attendance (today):*\n' +
+      `• WhatsApp check-ins recorded: ${checkinsToday}\n\n`;
+
+    text +=
+      '_Note: This is a demo snapshot. The full version will include burnout risk and agency-spend forecasts._';
+
+    await replyWhatsApp(fromPhone, text);
+  } catch (err) {
+    console.error('[INSIGHT TODAY] Error building insight:', err);
+    const msg =
+      '❌ Something went wrong while generating today’s insight.\n\n' +
+      'Please try again later or speak with your manager.';
+    await replyWhatsApp(fromPhone, msg);
+  }
+}
+
+// -------------------------
+// Webhook route
+// -------------------------
+
+// IMPORTANT: this MUST be "/webhook" because index.js mounts this router at "/api/whatsapp"
+// so the full path is "/api/whatsapp/webhook" which matches your Twilio config.
+router.post('/webhook', async (req, res) => {
+  const fromRaw = req.body.From || req.body.from || '';
+  const bodyRaw = req.body.Body || req.body.body || '';
+
+  console.log('Incoming WhatsApp:', {
+    from: fromRaw,
+    bodyRaw,
+  });
+
+  const from = normaliseWhatsAppNumber(fromRaw);
+  const organisationId = 1;
+
+  const command = String(bodyRaw || '').trim();
+  const upper = command.toUpperCase();
+
+  console.log('[WEBHOOK] Normalised command:', upper);
+
+  // Respond 200 quickly so Twilio is happy
+  res.status(200).send('OK');
+
+  try {
+    if (!from) {
+      console.error('[WEBHOOK] Missing from phone number');
+      return;
+    }
+
+    if (!command) {
+      await replyWhatsApp(
+        from,
+        '❓ Sorry, I did not receive any command.\n\nPlease type *MENU* to see options.'
+      );
+      return;
+    }
+
+    if (upper === 'MENU' || upper === 'HELP') {
+      await handleMenuCommand(from);
+    } else if (upper === 'CHECKIN') {
+      await handleCheckinCommand(from, organisationId);
+    } else if (upper === 'CHECKOUT') {
+      await handleCheckoutCommand(from, organisationId);
+    } else if (upper === 'MY SHIFTS') {
+      await handleMyShiftsCommand(from, organisationId);
+    } else if (upper === 'INSIGHT TODAY') {
+      await handleInsightTodayCommand(from, organisationId);
+    } else if (upper === 'ACCEPT') {
+      await handleAcceptCommand(from, organisationId);
+    } else if (upper === 'DECLINE') {
+      await handleDeclineCommand(from, organisationId);
+    } else {
+      const msg =
+        "🤔 Sorry, I didn't understand that.\n\n" +
+        'Please type *MENU* to see the list of available commands.';
+      await replyWhatsApp(from, msg);
+    }
+  } catch (err) {
+    console.error('Error in WhatsApp webhook handler:', err);
+    const msg =
+      '❌ Something went wrong while processing your request.\n\n' +
+      'Please try again or speak with your ward manager.';
     try {
-      const fromRaw = req.body.From || req.body.from || '';
-      const bodyRaw = req.body.Body || req.body.body || '';
-
-      const from = normalizePhone(fromRaw);
-      const text = String(bodyRaw || '').trim();
-
-      if (!from || !text) {
-        return res.status(400).json({ error: 'Missing From or Body' });
+      if (from) {
+        await replyWhatsApp(from, msg);
       }
-
-      const cmd = text.toLowerCase();
-
-      // Look up or create the staff record for this phone number
-      const staff = await getOrCreateStaffByPhone({
-        phone: from,
-        organisationName: 'Priory Group',
-      });
-      const orgId = staff.organisation_id;
-
-      // Helper: log attendance in attendance_logs
-      async function logAttendance(action) {
-        const q = await pool.query(
-          `INSERT INTO attendance_logs (staff_id, organisation_id, action, source, metadata)
-           VALUES ($1,$2,$3,'whatsapp',$4)
-           RETURNING id, occurred_at`,
-          [staff.id, orgId, action, JSON.stringify({ via: 'whatsapp' })]
-        );
-        return q.rows[0];
-      }
-
-      // Default reply (if nothing matches)
-      let reply =
-        "Sorry, I didn't understand that. Type *menu* to see what I can do.";
-
-      // === MENU / HELP ===
-      if (cmd === 'menu' || cmd === 'help' || cmd === 'hi' || cmd === 'hello') {
-        reply = buildMenuText();
-
-      // === CHECKIN ===
-      } else if (cmd === 'checkin') {
-        const row = await logAttendance('checkin');
-        reply = '✅ Checked in at ' + new Date(row.occurred_at).toLocaleString();
-
-      // === CHECKOUT ===
-      } else if (cmd === 'checkout') {
-        const row = await logAttendance('checkout');
-        reply = '✅ Checked out at ' + new Date(row.occurred_at).toLocaleString();
-
-      // === MY SHIFTS (next 7 days) ===
-      } else if (cmd === 'my shifts') {
-        const now = new Date();
-        const to = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
-
-        const result = await pool.query(
-          `SELECT
-             sa.id AS assignment_id,
-             s.shift_ref,
-             s.ward,
-             s.shift_date
-           FROM shift_assignments sa
-           JOIN shifts s ON sa.shift_id = s.id
-           WHERE sa.staff_id = $1
-             AND s.shift_date >= $2
-             AND s.shift_date <= $3
-           ORDER BY s.shift_date ASC
-           LIMIT 5`,
-          [staff.id, now.toISOString(), to.toISOString()]
-        );
-
-        if (!result.rows.length) {
-          reply = '📅 You have no upcoming shifts in the next 7 days.';
-        } else {
-          const lines = result.rows.map((row) => {
-            const when = new Date(row.shift_date).toLocaleString();
-            const ward = row.ward || 'Ward not set';
-            const ref = row.shift_ref || 'No ref';
-            return '• ' + when + ' – ' + ward + ' (' + ref + ')';
-          });
-          reply = '📅 Your next shifts:\n' + lines.join('\n');
-        }
-
-      // === MY WEEK / ROTA (summary style) ===
-      } else if (cmd === 'my week' || cmd === 'rota') {
-        const now = new Date();
-        const to = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
-
-        const result = await pool.query(
-          `SELECT
-             s.shift_date,
-             s.ward,
-             s.shift_ref
-           FROM shift_assignments sa
-           JOIN shifts s ON sa.shift_id = s.id
-           WHERE sa.staff_id = $1
-             AND s.shift_date >= $2
-             AND s.shift_date <= $3
-           ORDER BY s.shift_date ASC`,
-          [staff.id, now.toISOString(), to.toISOString()]
-        );
-
-        if (!result.rows.length) {
-          reply = '📅 No shifts on your rota for the next 7 days.';
-        } else {
-          const lines = result.rows.map((row) => {
-            const d = new Date(row.shift_date);
-            const day = d.toLocaleDateString(undefined, {
-              weekday: 'short',
-              day: '2-digit',
-              month: 'short',
-            });
-            const ward = row.ward || 'Ward';
-            const ref = row.shift_ref || '';
-            return `• ${day} – ${ward} ${ref ? '(' + ref + ')' : ''}`;
-          });
-          reply = '📅 Your rota (next 7 days):\n' + lines.join('\n');
-        }
-
-      // === INSIGHT TODAY (from analytics_snapshots JSONB) ===
-      } else if (cmd === 'insight today') {
-        const result = await pool.query(
-          `SELECT data, snapshot_date
-           FROM analytics_snapshots
-           WHERE organisation_id = $1
-           ORDER BY snapshot_date DESC, id DESC
-           LIMIT 1`,
-          [orgId]
-        );
-
-        if (!result.rows.length) {
-          reply =
-            '📊 No analytics insight available yet. Ask your manager to run the AI dashboard.';
-        } else {
-          const row = result.rows[0];
-          const payload = row.data || {};
-          const summary =
-            payload.summary ||
-            payload.overall ||
-            'Wellbeing summary not available yet.';
-          const dateLabel = row.snapshot_date
-            ? new Date(row.snapshot_date).toLocaleDateString()
-            : 'unknown date';
-
-          reply = '📊 ' + summary + '\n\n' + '(last updated: ' + dateLabel + ')';
-        }
-
-      // === OFFERS: list recent shift offers for this staff ===
-      } else if (cmd === 'offers') {
-        const result = await pool.query(
-          `SELECT so.id, so.status, so.created_at,
-                  s.shift_date, s.ward, s.shift_ref
-           FROM shift_offers so
-           JOIN shifts s ON so.shift_id = s.id
-           WHERE so.staff_id = $1
-           ORDER BY so.created_at DESC
-           LIMIT 5`,
-          [staff.id]
-        );
-
-        if (!result.rows.length) {
-          reply = '📨 You have no recent shift offers.';
-        } else {
-          const lines = result.rows.map((row) => {
-            const when = new Date(row.shift_date).toLocaleString();
-            const ward = row.ward || 'Ward';
-            const ref = row.shift_ref || '';
-            return (
-              `• [${row.status}] ` +
-              when +
-              ' – ' +
-              ward +
-              (ref ? ' (' + ref + ')' : '') +
-              ' — Offer ID: ' +
-              row.id
-            );
-          });
-          reply = '📨 Your recent shift offers:\n' + lines.join('\n');
-        }
-
-      // === LAST OFFER: show the most recent offer details ===
-      } else if (cmd === 'last offer') {
-        const result = await pool.query(
-          `SELECT so.id, so.status, so.created_at,
-                  s.shift_date, s.ward, s.shift_ref
-           FROM shift_offers so
-           JOIN shifts s ON so.shift_id = s.id
-           WHERE so.staff_id = $1
-           ORDER BY so.created_at DESC
-           LIMIT 1`,
-          [staff.id]
-        );
-
-        if (!result.rows.length) {
-          reply = '📨 You have no shift offers yet.';
-        } else {
-          const row = result.rows[0];
-          const when = new Date(row.shift_date).toLocaleString();
-          const ward = row.ward || 'Ward';
-          const ref = row.shift_ref || '';
-          reply =
-            '📨 Your latest offer:\n' +
-            `• ${when} – ${ward}` +
-            (ref ? ' (' + ref + ')' : '') +
-            `\nStatus: ${row.status}\nOffer ID: ${row.id}`;
-        }
-
-      // === ACCEPT: accept the most recent offered shift ===
-      } else if (
-        cmd === 'accept' ||
-        cmd === 'accept shift' ||
-        cmd === 'accept offer'
-      ) {
-        const result = await pool.query(
-          `SELECT so.id, so.shift_id, so.status,
-                  s.shift_date, s.ward, s.shift_ref
-           FROM shift_offers so
-           JOIN shifts s ON so.shift_id = s.id
-           WHERE so.staff_id = $1
-             AND so.status = 'offered'
-           ORDER BY so.created_at DESC
-           LIMIT 1`,
-          [staff.id]
-        );
-
-        if (!result.rows.length) {
-          reply =
-            '❌ You have no pending offers to accept. Type *offers* to see your history.';
-        } else {
-          const offer = result.rows[0];
-
-          // Mark offer as accepted
-          await pool.query(
-            `UPDATE shift_offers
-             SET status = 'accepted',
-                 responded_at = NOW()
-             WHERE id = $1`,
-            [offer.id]
-          );
-
-          // Ensure a shift_assignment exists
-          const existing = await pool.query(
-            `SELECT id FROM shift_assignments
-             WHERE staff_id = $1 AND shift_id = $2
-             LIMIT 1`,
-            [staff.id, offer.shift_id]
-          );
-
-          if (!existing.rows.length) {
-            await pool.query(
-              `INSERT INTO shift_assignments (staff_id, shift_id)
-               VALUES ($1,$2)`,
-              [staff.id, offer.shift_id]
-            );
-          }
-
-          const when = new Date(offer.shift_date).toLocaleString();
-          const ward = offer.ward || 'Ward';
-          const ref = offer.shift_ref || '';
-          reply =
-            '✅ You have *accepted* this shift:\n' +
-            `• ${when} – ${ward}` +
-            (ref ? ' (' + ref + ')' : '') +
-            '\n\nYour manager has been notified.';
-        }
-
-      // === DECLINE: decline the most recent offered shift ===
-      } else if (
-        cmd === 'decline' ||
-        cmd === 'decline shift' ||
-        cmd === 'decline offer'
-      ) {
-        const result = await pool.query(
-          `SELECT so.id, so.shift_id, so.status,
-                  s.shift_date, s.ward, s.shift_ref
-           FROM shift_offers so
-           JOIN shifts s ON so.shift_id = s.id
-           WHERE so.staff_id = $1
-             AND so.status = 'offered'
-           ORDER BY so.created_at DESC
-           LIMIT 1`,
-          [staff.id]
-        );
-
-        if (!result.rows.length) {
-          reply =
-            '❌ You have no pending offers to decline. Type *offers* to see your history.';
-        } else {
-          const offer = result.rows[0];
-
-          // Mark offer as declined
-          await pool.query(
-            `UPDATE shift_offers
-             SET status = 'declined',
-                 responded_at = NOW()
-             WHERE id = $1`,
-            [offer.id]
-          );
-
-          const when = new Date(offer.shift_date).toLocaleString();
-          const ward = offer.ward || 'Ward';
-          const ref = offer.shift_ref || '';
-          reply =
-            '❌ You *declined* this shift:\n' +
-            `• ${when} – ${ward}` +
-            (ref ? ' (' + ref + ')' : '') +
-            '\n\nThank you for responding promptly.';
-        }
-
-      // === FALLBACK: unrecognised command ===
-      } else {
-        // keep default reply already set
-      }
-
-      // Send WhatsApp reply
-      await sendWhatsApp(from, reply);
-
-      // Respond to Twilio
-      return res.json({
-        status: 'ok',
-        to: from,
-        message: reply,
-        staff_id: staff.id,
-      });
-    } catch (err) {
-      console.error('WhatsApp webhook error:', err);
-      return res.status(500).json({ error: 'Webhook processing failed' });
+    } catch (e2) {
+      console.error('Failed to send error reply to WhatsApp:', e2);
     }
   }
-);
+});
 
 module.exports = router;

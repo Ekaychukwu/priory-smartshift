@@ -1,33 +1,85 @@
-const { pool } = require('../utils/db_postgres');
+'use strict';
 
-function normalizePhone(num) {
-  if (!num) return '';
-  let n = String(num).trim();
-  n = n.replace(/^whatsapp:/i, '');
-  n = n.replace(/[^\d+]/g, ''); // keep + and digits only
-  return n;
+const pool = require('../db');
+
+/**
+ * Get or create a staff record for a given phone + organisation.
+ * 
+ * @param {string} phoneNumber - Normalised phone number, e.g. "+447979195363"
+ * @param {number} organisationId - Organisation ID (for now we use 1 in dev)
+ * @returns {Promise<object>} staff row
+ */
+async function getOrCreateStaffByPhone(phoneNumber, organisationId) {
+  const normalised = String(phoneNumber).trim();
+
+  console.log('[staffDirectory] Looking up staff by phone:', {
+    normalised,
+    organisationId,
+  });
+
+  const selectSql = `
+    SELECT id,
+           name,
+           phone_number,
+           preferred_shift,
+           wellbeing_score,
+           contracted_hours_per_week,
+           organisation_id
+    FROM staff
+    WHERE phone_number = $1
+      AND organisation_id = $2
+    LIMIT 1
+  `;
+
+  const { rows } = await pool.query(selectSql, [normalised, organisationId]);
+  if (rows.length > 0) {
+    console.log('[staffDirectory] Found existing staff for phone:', {
+      staff_id: rows[0].id,
+      name: rows[0].name,
+      phone_number: rows[0].phone_number,
+    });
+    return rows[0];
+  }
+
+  console.log('[staffDirectory] No staff found, creating WhatsApp staff record');
+
+  const insertSql = `
+    INSERT INTO staff (
+      name,
+      phone_number,
+      preferred_shift,
+      wellbeing_score,
+      contracted_hours_per_week,
+      organisation_id
+    )
+    VALUES ($1, $2, $3, $4, $5, $6)
+    RETURNING id,
+              name,
+              phone_number,
+              preferred_shift,
+              wellbeing_score,
+              contracted_hours_per_week,
+              organisation_id
+  `;
+
+  const { rows: inserted } = await pool.query(insertSql, [
+    'WhatsApp User',
+    normalised,
+    'Day',
+    0,
+    37.5,
+    organisationId,
+  ]);
+
+  console.log('[staffDirectory] Created staff:', {
+    id: inserted[0].id,
+    name: inserted[0].name,
+    phone_number: inserted[0].phone_number,
+  });
+
+  return inserted[0];
 }
 
-async function ensureOrganisation(name) {
-  const find = await pool.query('SELECT id FROM organisations WHERE name=$1 LIMIT 1', [name]);
-  if (find.rows[0]) return find.rows[0].id;
-  const ins = await pool.query('INSERT INTO organisations (name) VALUES ($1) RETURNING id', [name]);
-  return ins.rows[0].id;
-}
-
-async function getOrCreateStaffByPhone({ phone, organisationName = 'Priory Group' }) {
-  const normalized = normalizePhone(phone);
-  const existing = await pool.query('SELECT * FROM staff WHERE phone_number=$1 LIMIT 1', [normalized]);
-  if (existing.rows[0]) return existing.rows[0];
-
-  const orgId = await ensureOrganisation(organisationName);
-  const ins = await pool.query(
-    `INSERT INTO staff (name, phone_number, preferred_shift, wellbeing_score, organisation_id)
-     VALUES ($1,$2,$3,$4,$5)
-     RETURNING *`,
-    ['WhatsApp User', normalized, 'Day', 0, orgId]
-  );
-  return ins.rows[0];
-}
-
-module.exports = { normalizePhone, getOrCreateStaffByPhone };
+module.exports = {
+  getOrCreateStaffByPhone,
+};

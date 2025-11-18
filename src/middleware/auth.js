@@ -1,70 +1,66 @@
+// src/middleware/auth.js
+//
+// Global JWT authentication middleware.
+// This protects all /api/* routes EXCEPT:
+//   - /api/auth/*              (public: login/register)
+//   - /api/whatsapp/webhook    (Twilio webhook)
+//   - /api/debug/*             (DEV-ONLY helper routes)
+//
+// It expects a header:
+//   Authorization: Bearer <token>
+//
+// On success it sets req.user = { id, email, role, organisation_id }.
+
 const jwt = require('jsonwebtoken');
-const { pool } = require('../utils/db_postgres');
 
-const JWT_SECRET = process.env.JWT_SECRET || 'change-me';
+module.exports = function authMiddleware(req, res, next) {
+  const url = req.originalUrl || req.url || '';
+  const method = req.method;
 
-/**
- * Decide which routes are PUBLIC (no JWT needed).
- */
-function isPublic(req) {
-  const path = req.path || req.url || '';
-
-  // Auth endpoints stay public
-  if (path.startsWith('/api/auth')) return true;
-
-  // WhatsApp webhook must stay open for Twilio
-  if (path === '/api/whatsapp/webhook' || path.startsWith('/api/whatsapp/webhook')) {
-    return true;
+  // 1) Allow all non-API routes through (e.g. /, /public/*)
+  if (!url.startsWith('/api/')) {
+    return next();
   }
 
-  // Health/root & static assets
-  if (path === '/' || path.startsWith('/public')) return true;
+  // 2) Allow auth routes (register/login) without a token
+  if (url.startsWith('/api/auth')) {
+    return next();
+  }
 
-  return false;
-}
+  // 3) Allow Twilio webhook without a token
+  if (url === '/api/whatsapp/webhook' && method === 'POST') {
+    return next();
+  }
 
-/**
- * JWT authentication middleware
- * - Skips public routes
- * - For protected routes, reads Bearer token
- * - Verifies JWT
- * - Loads full user (including role, organisation_id) from Postgres
- * - Attaches req.user
- */
-module.exports = async function authMiddleware(req, res, next) {
+  // 4) Allow debug helper routes without a token (dev only)
+  if (url.startsWith('/api/debug/')) {
+    return next();
+  }
+
+  // 5) Everything else under /api/* requires a JWT
+  const authHeader = req.headers['authorization'] || req.headers['Authorization'];
+
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return res.status(401).json({ error: 'Missing Authorization Bearer token' });
+  }
+
+  const token = authHeader.slice('Bearer '.length).trim();
+  const secret = process.env.JWT_SECRET || 'dev-secret';
+
   try {
-    if (isPublic(req)) {
-      return next();
-    }
+    const decoded = jwt.verify(token, secret);
 
-    const authHeader = req.headers['authorization'] || '';
-    if (!authHeader.startsWith('Bearer ')) {
-      return res.status(401).json({ error: 'Missing Authorization Bearer token' });
-    }
+    // Normalise the user object we put on the request
+    req.user = {
+      id: decoded.id,
+      email: decoded.email,
+      role: decoded.role,
+      organisation_id: decoded.organisation_id,
+    };
 
-    const token = authHeader.slice(7); // drop 'Bearer '
-    let payload;
-    try {
-      payload = jwt.verify(token, JWT_SECRET);
-    } catch (err) {
-      console.error('JWT verify error:', err.message);
-      return res.status(401).json({ error: 'Invalid or expired token' });
-    }
-
-    // Load the latest user data (role, organisation_id etc.) from DB
-    const { rows } = await pool.query(
-      'SELECT id, email, role, organisation_id FROM users WHERE id = $1 LIMIT 1',
-      [payload.id]
-    );
-
-    if (!rows.length) {
-      return res.status(401).json({ error: 'User no longer exists' });
-    }
-
-    req.user = rows[0];
     return next();
   } catch (err) {
-    console.error('Auth middleware error:', err);
-    return res.status(500).json({ error: 'Auth middleware failed' });
+    console.error('JWT verify error:', err.message);
+    return res.status(401).json({ error: 'Invalid or expired token' });
   }
 };
