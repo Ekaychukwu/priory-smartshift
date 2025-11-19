@@ -11,8 +11,15 @@ const PORT = process.env.PORT || 3000;
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Serve static assets
+// ===============================
+// STATIC ASSETS (PUBLIC FOLDER)
+// ===============================
+//
+// 1) /public/...  → e.g. /public/manager-dashboard.html
+// 2) root ...     → e.g. /manager-dashboard.html
+//
 app.use('/public', express.static(path.join(__dirname, 'public')));
+app.use(express.static(path.join(__dirname, 'public')));
 
 // ===============================
 // AUTH ROUTES (PUBLIC)
@@ -52,6 +59,7 @@ app.get('/api/debug/test-token', (req, res) => {
 
 // ===============================
 // GLOBAL AUTH MIDDLEWARE
+// (applies AFTER public/static routes)
 // ===============================
 const authMiddleware = require('./src/middleware/auth');
 app.use(authMiddleware);
@@ -74,7 +82,9 @@ app.use('/api/manager', managerRoutes);
 const shiftsRoutes = require('./src/routes/shiftsRoutes');
 app.use('/api/shifts', shiftsRoutes);
 
-// Debug test JWT-protected route
+// ===============================
+// DEBUG JWT-PROTECTED ROUTE
+// ===============================
 app.get('/api/ai/insight', (req, res) => {
   res.json({
     message: 'JWT-protected insight route working',
@@ -82,12 +92,16 @@ app.get('/api/ai/insight', (req, res) => {
   });
 });
 
-// Health check
+// ===============================
+// HEALTH CHECK
+// ===============================
 app.get('/', (_req, res) => {
   res.json({ message: 'Priory SmartShift Express API running' });
 });
 
-// Start server
+// ===============================
+// START SERVER
+// ===============================
 app.listen(PORT, () => {
   console.log(`Server listening on port ${PORT}`);
 });

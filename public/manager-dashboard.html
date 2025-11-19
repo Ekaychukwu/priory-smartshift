@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Priory SmartShift – Manager Dashboard (Demo)</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <!-- Tailwind via CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body {
+      background: #f1f5f9;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    .card {
+      background: white;
+      border-radius: 1.25rem;
+      box-shadow: 0 15px 40px rgba(15, 23, 42, 0.08);
+    }
+    .badge {
+      border-radius: 999px;
+      font-size: 0.75rem;
+      padding: 0.15rem 0.6rem;
+    }
+    .badge-soft {
+      background: #e0e7ff;
+      color: #3730a3;
+    }
+    .badge-soft-amber {
+      background: #fef3c7;
+      color: #92400e;
+    }
+    .badge-soft-emerald {
+      background: #d1fae5;
+      color: #047857;
+    }
+    .badge-soft-rose {
+      background: #ffe4e6;
+      color: #be123c;
+    }
+    .pill-input {
+      border-radius: 999px;
+    }
+    .table-header {
+      background: #f8fafc;
+    }
+    .muted {
+      color: #64748b;
+    }
+  </style>
+</head>
+<body class="min-h-screen">
+  <!-- Top bar -->
+  <header class="w-full bg-slate-900 text-slate-50">
+    <div class="max-w-5xl mx-auto px-4 py-4 flex items-center justify-between">
+      <div>
+        <h1 class="text-lg md:text-2xl font-semibold">
+          Priory SmartShift – Manager Dashboard (Demo)
+        </h1>
+        <p class="text-xs md:text-sm text-slate-300">
+          Today’s attendance &amp; shift fill status – organisation #1
+        </p>
+      </div>
+      <div class="text-xs md:text-sm text-slate-300">
+        Powered by <span class="font-semibold">The Labour Prefect</span>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-5xl mx-auto px-4 py-6 space-y-6">
+    <!-- Token card -->
+    <section class="card p-5 md:p-6 space-y-3">
+      <div class="flex items-center justify-between gap-2">
+        <div class="flex items-center gap-2">
+          <div class="text-amber-500 text-lg">🔐</div>
+          <div>
+            <h2 class="text-base md:text-lg font-semibold">
+              Manager access token
+            </h2>
+            <p class="text-xs md:text-sm muted">
+              Paste the token from <code class="bg-slate-100 px-1 rounded">/api/debug/test-token</code> here once.
+              This page will store it in your browser while the tab is open.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div class="flex flex-col md:flex-row gap-3 mt-2">
+        <input
+          id="jwtInput"
+          type="text"
+          placeholder="JWT token..."
+          class="flex-1 border border-slate-200 px-3 py-2 text-xs md:text-sm pill-input focus:outline-none focus:ring-2 focus:ring-indigo-500"
+        />
+        <div class="flex gap-2">
+          <button
+            id="saveTokenBtn"
+            class="px-4 py-2 text-xs md:text-sm rounded-full bg-slate-900 text-white hover:bg-slate-800 transition-colors"
+          >
+            Save token
+          </button>
+          <button
+            id="refreshBtn"
+            class="px-4 py-2 text-xs md:text-sm rounded-full bg-slate-200 text-slate-800 hover:bg-slate-300 transition-colors"
+          >
+            Refresh data
+          </button>
+        </div>
+      </div>
+
+      <p
+        id="statusMessage"
+        class="text-xs md:text-sm mt-1 muted"
+      >
+        Paste token and click “Save token” to begin.
+      </p>
+    </section>
+
+    <!-- Two-column layout: Today attendance + Today shift status -->
+    <section class="grid md:grid-cols-2 gap-6">
+      <!-- Today attendance -->
+      <div class="card p-5 md:p-6 space-y-3">
+        <div class="flex items-center justify-between">
+          <div>
+            <h2 class="text-base md:text-lg font-semibold">
+              Today’s check-ins &amp; check-outs
+            </h2>
+            <p class="text-xs md:text-sm muted">
+              Live attendance logs from WhatsApp check-in / check-out.
+            </p>
+          </div>
+          <span
+            id="attendanceCountBadge"
+            class="badge badge-soft"
+          >
+            0 events
+          </span>
+        </div>
+
+        <div class="overflow-x-auto mt-2">
+          <table class="min-w-full text-xs md:text-sm">
+            <thead class="table-header text-slate-500 text-xs uppercase tracking-wide">
+              <tr>
+                <th class="text-left px-3 py-2">Staff</th>
+                <th class="text-left px-3 py-2">Action</th>
+                <th class="text-left px-3 py-2">Time</th>
+                <th class="text-left px-3 py-2">Source</th>
+              </tr>
+            </thead>
+            <tbody id="attendanceBody" class="text-slate-800 text-xs md:text-sm">
+              <tr>
+                <td colspan="4" class="px-3 py-3 text-center muted">
+                  No attendance events recorded for today yet.
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Today shift status -->
+      <div class="card p-5 md:p-6 space-y-3">
+        <div class="flex items-center justify-between">
+          <div>
+            <h2 class="text-base md:text-lg font-semibold">
+              Today’s shift fill status
+            </h2>
+            <p class="text-xs md:text-sm muted">
+              See how many shifts are fully filled, partially filled, or unfilled today.
+              Includes gender requirements where applicable.
+            </p>
+          </div>
+          <span
+            id="shiftTodayCountBadge"
+            class="badge badge-soft-amber"
+          >
+            0 shifts
+          </span>
+        </div>
+
+        <!-- Small analytics row for today -->
+        <div id="todayShiftStats" class="flex flex-wrap gap-2 text-xs md:text-sm muted mt-1">
+          <span class="badge badge-soft-emerald">🟢 Full: 0</span>
+          <span class="badge badge-soft-amber">🟡 Partial: 0</span>
+          <span class="badge badge-soft-rose">🔴 Unfilled: 0</span>
+        </div>
+
+        <div class="overflow-x-auto mt-2">
+          <table class="min-w-full text-xs md:text-sm">
+            <thead class="table-header text-slate-500 text-xs uppercase tracking-wide">
+              <tr>
+                <th class="text-left px-3 py-2">Ward</th>
+                <th class="text-left px-3 py-2">Role</th>
+                <th class="text-left px-3 py-2">Time</th>
+                <th class="text-left px-3 py-2">Fill</th>
+                <th class="text-left px-3 py-2">Gender</th>
+              </tr>
+            </thead>
+            <tbody id="shiftTodayBody" class="text-slate-800 text-xs md:text-sm">
+              <tr>
+                <td colspan="5" class="px-3 py-3 text-center muted">
+                  No shifts scheduled for today.
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- Date range summary card -->
+    <section class="card p-5 md:p-6 space-y-3">
+      <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+        <div>
+          <h2 class="text-base md:text-lg font-semibold">
+            Shift summary (date range)
+          </h2>
+          <p class="text-xs md:text-sm muted">
+            View shifts and fill status for any date window – useful for spotting patterns or hot spots.
+          </p>
+        </div>
+        <div class="flex flex-wrap items-center gap-2">
+          <div class="flex items-center gap-1">
+            <label for="fromDate" class="text-xs muted">From</label>
+            <input
+              id="fromDate"
+              type="date"
+              class="border border-slate-200 px-2 py-1 text-xs pill-input focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            />
+          </div>
+          <div class="flex items-center gap-1">
+            <label for="toDate" class="text-xs muted">To</label>
+            <input
+              id="toDate"
+              type="date"
+              class="border border-slate-200 px-2 py-1 text-xs pill-input focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            />
+          </div>
+          <button
+            id="loadRangeBtn"
+            class="px-4 py-2 text-xs md:text-sm rounded-full bg-slate-900 text-white hover:bg-slate-800 transition-colors"
+          >
+            Load range
+          </button>
+          <span id="rangeCountBadge" class="badge badge-soft-amber">0 shifts</span>
+        </div>
+      </div>
+
+      <!-- Range analytics row -->
+      <div id="rangeShiftStats" class="flex flex-wrap gap-2 text-xs md:text-sm muted mt-1">
+        <span class="badge badge-soft-emerald">🟢 Full: 0</span>
+        <span class="badge badge-soft-amber">🟡 Partial: 0</span>
+        <span class="badge badge-soft-rose">🔴 Unfilled: 0</span>
+      </div>
+
+      <div class="overflow-x-auto mt-2">
+        <table class="min-w-full text-xs md:text-sm">
+          <thead class="table-header text-slate-500 text-xs uppercase tracking-wide">
+            <tr>
+              <th class="text-left px-3 py-2">Date</th>
+              <th class="text-left px-3 py-2">Ward</th>
+              <th class="text-left px-3 py-2">Role</th>
+              <th class="text-left px-3 py-2">Time</th>
+              <th class="text-left px-3 py-2">Fill</th>
+              <th class="text-left px-3 py-2">Gender</th>
+            </tr>
+          </thead>
+          <tbody id="shiftRangeBody" class="text-slate-800 text-xs md:text-sm">
+            <tr>
+              <td colspan="6" class="px-3 py-3 text-center muted">
+                Choose a date range and click “Load range” to see shift details.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <footer class="py-6 text-center text-xs md:text-sm text-slate-400">
+    &copy; 2025 The Labour Prefect – Priory SmartShift demo manager view
+  </footer>
+
+  <script>
+    const API_BASE = '/api/manager';
+    const STORAGE_KEY = 'pss_manager_jwt';
+
+    function formatTime(isoString) {
+      if (!isoString) return '';
+      const d = new Date(isoString);
+      const hh = String(d.getHours()).padStart(2, '0');
+      const mm = String(d.getMinutes()).padStart(2, '0');
+      return hh + ':' + mm;
+    }
+
+    function formatDate(isoString) {
+      if (!isoString) return '';
+      const d = new Date(isoString);
+      return d.toLocaleDateString('en-GB', {
+        weekday: 'short',
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
+      });
+    }
+
+    // Load token from localStorage on page load
+    function loadTokenFromStorage() {
+      const stored = window.localStorage.getItem(STORAGE_KEY);
+      if (stored) {
+        document.getElementById('jwtInput').value = stored;
+      }
+    }
+
+    function getToken() {
+      const token = document.getElementById('jwtInput').value.trim();
+      return token || null;
+    }
+
+    function setStatus(message, isError = false) {
+      const el = document.getElementById('statusMessage');
+      el.textContent = message;
+      el.classList.toggle('text-red-500', isError);
+      el.classList.toggle('muted', !isError);
+    }
+
+    async function fetchJson(url) {
+      const token = getToken();
+      if (!token) {
+        setStatus('Please paste a JWT token and click “Save token” first.', true);
+        throw new Error('Missing token');
+      }
+      const res = await fetch(url, {
+        headers: {
+          'Authorization': 'Bearer ' + token,
+        },
+      });
+      if (!res.ok) {
+        const text = await res.text();
+        console.error('Request failed', res.status, text);
+        throw new Error('Request failed: ' + res.status);
+      }
+      return res.json();
+    }
+
+    function renderAttendance(data) {
+      const tbody = document.getElementById('attendanceBody');
+      const badge = document.getElementById('attendanceCountBadge');
+      tbody.innerHTML = '';
+
+      const items = data.items || [];
+      badge.textContent = items.length + ' events';
+
+      if (items.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="4" class="px-3 py-3 text-center muted">No attendance events recorded for today yet.</td></tr>';
+        return;
+      }
+
+      for (const row of items) {
+        const tr = document.createElement('tr');
+        tr.className = 'border-b last:border-b-0 border-slate-100';
+        const actionEmoji = row.action === 'checkin' ? '✅' : '⬅️';
+
+        tr.innerHTML = `
+          <td class="px-3 py-2">${row.staff_name || 'Unknown staff'}</td>
+          <td class="px-3 py-2">
+            <span class="inline-flex items-center gap-1">
+              <span>${actionEmoji}</span>
+              <span>${row.action}</span>
+            </span>
+          </td>
+          <td class="px-3 py-2">${formatTime(row.occurred_at)}</td>
+          <td class="px-3 py-2">${row.source || 'whatsapp'}</td>
+        `;
+        tbody.appendChild(tr);
+      }
+    }
+
+    function computeFillStats(items) {
+      let full = 0, partial = 0, unfilled = 0;
+      for (const s of items) {
+        const req = Number(s.number_required || 0);
+        const filled = Number(s.number_filled || 0);
+        if (req > 0 && filled >= req) {
+          full++;
+        } else if (req > 0 && filled > 0 && filled < req) {
+          partial++;
+        } else if (req > 0 && filled === 0) {
+          unfilled++;
+        }
+      }
+      return { full, partial, unfilled };
+    }
+
+    function renderShiftToday(data) {
+      const tbody = document.getElementById('shiftTodayBody');
+      const badge = document.getElementById('shiftTodayCountBadge');
+      const statsEl = document.getElementById('todayShiftStats');
+      tbody.innerHTML = '';
+
+      const items = data.items || [];
+      badge.textContent = items.length + ' shifts';
+
+      const { full, partial, unfilled } = computeFillStats(items);
+      statsEl.innerHTML = `
+        <span class="badge badge-soft-emerald">🟢 Full: ${full}</span>
+        <span class="badge badge-soft-amber">🟡 Partial: ${partial}</span>
+        <span class="badge badge-soft-rose">🔴 Unfilled: ${unfilled}</span>
+      `;
+
+      if (items.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" class="px-3 py-3 text-center muted">No shifts scheduled for today.</td></tr>';
+        return;
+      }
+
+      for (const s of items) {
+        const req = Number(s.number_required || 0);
+        const filled = Number(s.number_filled || 0);
+        let emoji = '🔴';
+        let label = 'Unfilled';
+        if (req > 0 && filled >= req) {
+          emoji = '🟢';
+          label = 'Full';
+        } else if (req > 0 && filled > 0 && filled < req) {
+          emoji = '🟡';
+          label = 'Partial';
+        }
+
+        const timeLabel = `${(s.start_time || '').slice(0,5)}–${(s.end_time || '').slice(0,5)}`;
+        const gender = s.gender_required || 'both';
+
+        const tr = document.createElement('tr');
+        tr.className = 'border-b last:border-b-0 border-slate-100';
+        tr.innerHTML = `
+          <td class="px-3 py-2">${s.ward || '—'}</td>
+          <td class="px-3 py-2">${s.role_required || '—'}</td>
+          <td class="px-3 py-2">${timeLabel}</td>
+          <td class="px-3 py-2">
+            <span class="inline-flex items-center gap-1">
+              <span>${emoji}</span>
+              <span>${filled}/${req} (${label})</span>
+            </span>
+          </td>
+          <td class="px-3 py-2">${gender}</td>
+        `;
+        tbody.appendChild(tr);
+      }
+    }
+
+    function renderShiftRange(data) {
+      const tbody = document.getElementById('shiftRangeBody');
+      const badge = document.getElementById('rangeCountBadge');
+      const statsEl = document.getElementById('rangeShiftStats');
+      tbody.innerHTML = '';
+
+      const items = data.items || [];
+      badge.textContent = items.length + ' shifts';
+
+      const { full, partial, unfilled } = computeFillStats(items);
+      statsEl.innerHTML = `
+        <span class="badge badge-soft-emerald">🟢 Full: ${full}</span>
+        <span class="badge badge-soft-amber">🟡 Partial: ${partial}</span>
+        <span class="badge badge-soft-rose">🔴 Unfilled: ${unfilled}</span>
+      `;
+
+      if (items.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" class="px-3 py-3 text-center muted">No shifts found for this range.</td></tr>';
+        return;
+      }
+
+      for (const s of items) {
+        const req = Number(s.number_required || 0);
+        const filled = Number(s.number_filled || 0);
+        let emoji = '🔴';
+        let label = 'Unfilled';
+        if (req > 0 && filled >= req) {
+          emoji = '🟢';
+          label = 'Full';
+        } else if (req > 0 && filled > 0 && filled < req) {
+          emoji = '🟡';
+          label = 'Partial';
+        }
+
+        const timeLabel = `${(s.start_time || '').slice(0,5)}–${(s.end_time || '').slice(0,5)}`;
+        const gender = s.gender_required || 'both';
+
+        const tr = document.createElement('tr');
+        tr.className = 'border-b last:border-b-0 border-slate-100';
+        tr.innerHTML = `
+          <td class="px-3 py-2">${formatDate(s.shift_date)}</td>
+          <td class="px-3 py-2">${s.ward || '—'}</td>
+          <td class="px-3 py-2">${s.role_required || '—'}</td>
+          <td class="px-3 py-2">${timeLabel}</td>
+          <td class="px-3 py-2">
+            <span class="inline-flex items-center gap-1">
+              <span>${emoji}</span>
+              <span>${filled}/${req} (${label})</span>
+            </span>
+          </td>
+          <td class="px-3 py-2">${gender}</td>
+        `;
+        tbody.appendChild(tr);
+      }
+    }
+
+    async function refreshAll() {
+      try {
+        setStatus('Refreshing data...', false);
+
+        const [attendance, shiftToday] = await Promise.all([
+          fetchJson(API_BASE + '/attendance/today'),
+          fetchJson(API_BASE + '/shifts/summary/today'),
+        ]);
+
+        renderAttendance(attendance);
+        renderShiftToday(shiftToday);
+
+        setStatus('Data refreshed successfully ✔', false);
+      } catch (err) {
+        console.error(err);
+        setStatus('Failed to refresh data. Check token and server.', true);
+      }
+    }
+
+    async function loadRange() {
+      const from = document.getElementById('fromDate').value;
+      const to = document.getElementById('toDate').value;
+
+      if (!from || !to) {
+        alert('Please select both From and To dates.');
+        return;
+      }
+
+      try {
+        setStatus('Loading range data...', false);
+        const url = `${API_BASE}/shifts/summary/range?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`;
+        const data = await fetchJson(url);
+        renderShiftRange(data);
+        setStatus('Range data loaded ✔', false);
+      } catch (err) {
+        console.error(err);
+        setStatus('Failed to load range data.', true);
+      }
+    }
+
+    // Wire up buttons and initialise
+    window.addEventListener('DOMContentLoaded', () => {
+      loadTokenFromStorage();
+
+      document.getElementById('saveTokenBtn').addEventListener('click', () => {
+        const token = getToken();
+        if (!token) {
+          setStatus('Please paste a JWT token before saving.', true);
+          return;
+        }
+        window.localStorage.setItem(STORAGE_KEY, token);
+        setStatus('Token saved in this browser tab. You can now refresh data.', false);
+      });
+
+      document.getElementById('refreshBtn').addEventListener('click', () => {
+        refreshAll();
+      });
+
+      document.getElementById('loadRangeBtn').addEventListener('click', () => {
+        loadRange();
+      });
+
+      // Optional: auto-refresh once on load if a token is already stored
+      if (getToken()) {
+        refreshAll();
+      }
+    });
+  </script>
+</body>
+</html>
