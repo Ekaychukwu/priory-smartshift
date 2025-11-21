@@ -105,3 +105,26 @@ app.get('/', (_req, res) => {
 app.listen(PORT, () => {
   console.log(`Server listening on port ${PORT}`);
 });
+
+// --- AI Insight test endpoint (stub) ---
+// This keeps everything on port 3000.
+// The manager dashboard "AI Insight – Today" card calls GET /api/test/ai/insight.
+// For now this is a simple static/stub payload. Later we can plug in real logic.
+
+function todayISOForInsight() {
+  const d = new Date();
+  return d.toISOString().slice(0, 10); // YYYY-MM-DD
+}
+
+app.get("/api/test/ai/insight", (req, res) => {
+  const payload = {
+    summary: "neutral", // possible values later: "neutral" | "warning" | "critical"
+    details: {
+      forecast_date: todayISOForInsight(),
+      expected_open_shifts: 7,
+      burnout_alerts: [] // e.g. ["Alder", "Woodlands"] later
+    }
+  };
+
+  res.json(payload);
+});

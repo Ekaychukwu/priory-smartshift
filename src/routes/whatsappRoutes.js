@@ -7,6 +7,28 @@ const { getOrCreateStaffByPhone } = require('../services/staffDirectory');
 const twilioSender = require('../services/twilioSender');
 
 // -------------------------
+// In-memory registration sessions
+// -------------------------
+//
+// Keyed by normalised phone number (e.g. "+4479...")
+// Value example:
+// {
+//   step: 1..4,
+//   organisationId: 1,
+//   staffId: 3,
+//   data: {
+//     fullName: '...',
+//     role: '...',
+//     ward: '...',
+//     preferredShift: 'Day',
+//     hoursPerWeek: 37.5
+//   },
+//   originalCommand: 'CHECKIN' | 'CHECKOUT' | 'MY SHIFTS' | 'ACCEPT' | 'DECLINE' | 'INSIGHT TODAY'
+// }
+
+const registrationSessions = new Map();
+
+// -------------------------
 // Helpers
 // -------------------------
 
@@ -36,6 +58,7 @@ async function replyWhatsApp(toPhone, message) {
     });
     console.log('[Twilio] WhatsApp message sent via API helper');
   } catch (err) {
+    console.error('[Twilio] Error sending WhatsApp message:', err);
     console.error('[Twilio] Failed to send WhatsApp reply:', err);
   }
 }
@@ -48,6 +71,271 @@ function formatShiftDate(dateStr) {
     month: 'short',
     year: 'numeric',
   });
+}
+
+// -------------------------
+// Registration helpers
+// -------------------------
+
+async function staffNeedsRegistration(staffId, organisationId) {
+  // Look up full staff row and see if key fields are missing.
+  try {
+    const { rows } = await pool.query(
+      `
+        SELECT
+          full_name,
+          role,
+          ward,
+          preferred_shift,
+          contracted_hours_per_week
+        FROM staff
+        WHERE id = $1 AND organisation_id = $2
+      `,
+      [staffId, organisationId]
+    );
+
+    if (rows.length === 0) {
+      // No staff row (unlikely because getOrCreateStaffByPhone should create one),
+      // but don't block commands in that case.
+      return false;
+    }
+
+    const s = rows[0];
+    const hours = Number(s.contracted_hours_per_week || 0);
+
+    // If any of these are missing/empty, run registration.
+    if (!s.full_name || !s.role || !s.ward || !s.preferred_shift || !hours) {
+      return true;
+    }
+
+    return false;
+  } catch (err) {
+    console.error('[REGISTRATION] Failed to evaluate staffNeedsRegistration:', err);
+    // If we cannot evaluate safely, do NOT force registration.
+    return false;
+  }
+}
+
+function getRegistrationSession(phone) {
+  return registrationSessions.get(phone);
+}
+
+function setRegistrationSession(phone, session) {
+  registrationSessions.set(phone, session);
+}
+
+function clearRegistrationSession(phone) {
+  registrationSessions.delete(phone);
+}
+
+async function sendRegistrationPrompt(phone, session) {
+  const step = session.step;
+  if (step === 1) {
+    const msg =
+      '👋 Welcome to *Priory SmartShift*.\n\n' +
+      'Before we record your shift, let’s set up your staff profile.\n\n' +
+      '1️⃣ Please reply with your *full name* (e.g. "Prince Ikechukwu Opara").';
+    await replyWhatsApp(phone, msg);
+  } else if (step === 2) {
+    const msg =
+      '2️⃣ Great, thank you.\n\n' +
+      'Please reply with your *main role* (e.g. "Healthcare Assistant", "Staff Nurse").';
+    await replyWhatsApp(phone, msg);
+  } else if (step === 3) {
+    const msg =
+      '3️⃣ Thanks.\n\n' +
+      'Please reply with your *usual ward* (e.g. "Woodlands", "Alder", "Willows").';
+    await replyWhatsApp(phone, msg);
+  } else if (step === 4) {
+    const msg =
+      '4️⃣ Almost done.\n\n' +
+      'Please reply with your *usual shift pattern* and hours, in one line.\n' +
+      'For example:\n' +
+      '• "Day, 37.5"\n' +
+      '• "Nights, 30"\n\n' +
+      'If unsure, you can simply reply with "Day, 37.5".';
+    await replyWhatsApp(phone, msg);
+  } else {
+    console.warn('[REGISTRATION] sendRegistrationPrompt called with invalid step:', step);
+  }
+}
+
+async function applyRegistrationToStaff(staffId, organisationId, data) {
+  const hours = Number(data.hoursPerWeek || 0) || 37.5;
+  const preferredShift = data.preferredShift || 'Day';
+  const fullName = data.fullName || data.name || 'WhatsApp User';
+
+  // Use the first part of the full name as a shorter display name
+  const shortName = String(fullName).split(' ')[0] || 'Staff';
+
+  await pool.query(
+    `
+      UPDATE staff
+      SET
+        full_name = $3,
+        name = $4,
+        role = $5,
+        ward = $6,
+        preferred_shift = $7,
+        contracted_hours_per_week = $8
+      WHERE id = $1 AND organisation_id = $2
+    `,
+    [
+      staffId,
+      organisationId,
+      fullName,
+      shortName,
+      data.role || null,
+      data.ward || null,
+      preferredShift,
+      hours,
+    ]
+  );
+}
+
+async function beginRegistrationFlow(phone, staff, organisationId, originalCommand) {
+  console.log('[REGISTRATION] Staff needs registration, starting flow for', phone);
+
+  const session = {
+    step: 1,
+    organisationId,
+    staffId: staff.id,
+    data: {},
+    originalCommand: originalCommand || null,
+  };
+
+  setRegistrationSession(phone, session);
+  await sendRegistrationPrompt(phone, session);
+}
+
+async function handleRegistrationReply(phone, text, organisationId) {
+  const session = getRegistrationSession(phone);
+  if (!session) {
+    // No active session; nothing to do.
+    return false;
+  }
+
+  console.log('[REGISTRATION] Active session for', phone, 'step', session.step);
+
+  const clean = String(text || '').trim();
+  if (!clean) {
+    await replyWhatsApp(
+      phone,
+      '❓ I did not catch that.\n\nPlease reply with the requested information, or type *CANCEL* to stop registration.'
+    );
+    return true;
+  }
+
+  // Allow user to cancel registration.
+  if (clean.toUpperCase() === 'CANCEL') {
+    clearRegistrationSession(phone);
+    await replyWhatsApp(
+      phone,
+      '✅ Registration cancelled.\n\nYou can still use *MENU* to see available options.'
+    );
+    return true;
+  }
+
+  // Update data based on current step.
+  if (session.step === 1) {
+    session.data.fullName = clean;
+    session.step = 2;
+    setRegistrationSession(phone, session);
+    await sendRegistrationPrompt(phone, session);
+    return true;
+  }
+
+  if (session.step === 2) {
+    session.data.role = clean;
+    session.step = 3;
+    setRegistrationSession(phone, session);
+    await sendRegistrationPrompt(phone, session);
+    return true;
+  }
+
+  if (session.step === 3) {
+    session.data.ward = clean;
+    session.step = 4;
+    setRegistrationSession(phone, session);
+    await sendRegistrationPrompt(phone, session);
+    return true;
+  }
+
+  if (session.step === 4) {
+    // Expecting something like "Day, 37.5"
+    let preferredShift = 'Day';
+    let hoursPerWeek = 37.5;
+
+    const parts = clean.split(',').map((p) => p.trim());
+    if (parts[0]) {
+      preferredShift = parts[0];
+    }
+    if (parts[1]) {
+      const parsedHours = Number(parts[1]);
+      if (!Number.isNaN(parsedHours) && parsedHours > 0) {
+        hoursPerWeek = parsedHours;
+      }
+    }
+
+    session.data.preferredShift = preferredShift;
+    session.data.hoursPerWeek = hoursPerWeek;
+
+    // Apply to DB
+    try {
+      await applyRegistrationToStaff(session.staffId, session.organisationId, session.data);
+    } catch (err) {
+      console.error('[REGISTRATION] Failed to apply registration data to staff:', err);
+      clearRegistrationSession(phone);
+      await replyWhatsApp(
+        phone,
+        '❌ Something went wrong while saving your staff profile.\n\nPlease try again later or contact your ward manager.'
+      );
+      return true;
+    }
+
+    // All done
+    clearRegistrationSession(phone);
+
+    const displayName = session.data.fullName || 'staff member';
+
+    await replyWhatsApp(
+      phone,
+      `✅ Thank you *${displayName}*, your staff profile has been set up.\n\n` +
+        'You can now use:\n' +
+        '• *CHECKIN* / *CHECKOUT* to record attendance\n' +
+        '• *MY SHIFTS* to see upcoming shifts\n' +
+        '• *ACCEPT* / *DECLINE* to respond to shift offers\n' +
+        '• *INSIGHT TODAY* for staffing snapshot'
+    );
+
+    // Optionally re-run the original command (e.g. CHECKIN)
+    if (session.originalCommand) {
+      const cmd = session.originalCommand.toUpperCase();
+      console.log('[REGISTRATION] Re-running original command after registration:', cmd);
+
+      try {
+        if (cmd === 'CHECKIN') {
+          await handleCheckinCommand(phone, session.organisationId, { skipRegistrationCheck: true });
+        } else if (cmd === 'CHECKOUT') {
+          await handleCheckoutCommand(phone, session.organisationId, { skipRegistrationCheck: true });
+        } else if (cmd === 'MY SHIFTS') {
+          await handleMyShiftsCommand(phone, session.organisationId, { skipRegistrationCheck: true });
+        } else if (cmd === 'ACCEPT') {
+          await handleAcceptCommand(phone, session.organisationId, { skipRegistrationCheck: true });
+        } else if (cmd === 'DECLINE') {
+          await handleDeclineCommand(phone, session.organisationId, { skipRegistrationCheck: true });
+        } else if (cmd === 'INSIGHT TODAY') {
+          await handleInsightTodayCommand(phone, session.organisationId, { skipRegistrationCheck: true });
+        }
+      } catch (err) {
+        console.error('[REGISTRATION] Error while re-running original command:', err);
+      }
+    }
+
+    return true;
+  }
+
+  return false;
 }
 
 // -------------------------
@@ -69,11 +357,19 @@ async function handleMenuCommand(fromPhone) {
   await replyWhatsApp(fromPhone, menuText);
 }
 
-async function handleCheckinCommand(fromPhone, organisationId) {
+async function handleCheckinCommand(fromPhone, organisationId, options = {}) {
   console.log('[CHECKIN] Start for', fromPhone, 'org', organisationId);
 
   const staff = await getOrCreateStaffByPhone(fromPhone, organisationId);
   console.log('[CHECKIN] Staff record:', staff);
+
+  if (!options.skipRegistrationCheck) {
+    const needsReg = await staffNeedsRegistration(staff.id, organisationId);
+    if (needsReg) {
+      await beginRegistrationFlow(fromPhone, staff, organisationId, 'CHECKIN');
+      return;
+    }
+  }
 
   const { rows } = await pool.query(
     `
@@ -105,17 +401,26 @@ async function handleCheckinCommand(fromPhone, organisationId) {
     [staff.id, organisationId]
   );
 
+  const displayName = staff.name || staff.full_name || 'staff member';
   const msg =
-    `✅ Thank you *${staff.name}*, your *check-in* has been recorded.\n\n` +
+    `✅ Thank you *${displayName}*, your *check-in* has been recorded.\n\n` +
     '🩺 Have a safe and productive shift.';
   await replyWhatsApp(fromPhone, msg);
 }
 
-async function handleCheckoutCommand(fromPhone, organisationId) {
+async function handleCheckoutCommand(fromPhone, organisationId, options = {}) {
   console.log('[CHECKOUT] Start for', fromPhone, 'org', organisationId);
 
   const staff = await getOrCreateStaffByPhone(fromPhone, organisationId);
   console.log('[CHECKOUT] Staff record:', staff);
+
+  if (!options.skipRegistrationCheck) {
+    const needsReg = await staffNeedsRegistration(staff.id, organisationId);
+    if (needsReg) {
+      await beginRegistrationFlow(fromPhone, staff, organisationId, 'CHECKOUT');
+      return;
+    }
+  }
 
   const { rows } = await pool.query(
     `
@@ -147,15 +452,24 @@ async function handleCheckoutCommand(fromPhone, organisationId) {
     [staff.id, organisationId]
   );
 
+  const displayName = staff.name || staff.full_name || 'staff member';
   const msg =
-    `✅ Thank you *${staff.name}*, your *checkout* has been recorded.\n\n` +
+    `✅ Thank you *${displayName}*, your *checkout* has been recorded.\n\n` +
     '😌 Have a good rest after your shift.';
   await replyWhatsApp(fromPhone, msg);
 }
 
-async function handleMyShiftsCommand(fromPhone, organisationId) {
+async function handleMyShiftsCommand(fromPhone, organisationId, options = {}) {
   const staff = await getOrCreateStaffByPhone(fromPhone, organisationId);
   console.log('[MY SHIFTS] Staff record:', staff);
+
+  if (!options.skipRegistrationCheck) {
+    const needsReg = await staffNeedsRegistration(staff.id, organisationId);
+    if (needsReg) {
+      await beginRegistrationFlow(fromPhone, staff, organisationId, 'MY SHIFTS');
+      return;
+    }
+  }
 
   const { rows } = await pool.query(
     `
@@ -211,9 +525,17 @@ async function handleMyShiftsCommand(fromPhone, organisationId) {
   await replyWhatsApp(fromPhone, text.trim());
 }
 
-async function handleAcceptCommand(fromPhone, organisationId) {
+async function handleAcceptCommand(fromPhone, organisationId, options = {}) {
   const staff = await getOrCreateStaffByPhone(fromPhone, organisationId);
   console.log('[ACCEPT] Staff record:', staff);
+
+  if (!options.skipRegistrationCheck) {
+    const needsReg = await staffNeedsRegistration(staff.id, organisationId);
+    if (needsReg) {
+      await beginRegistrationFlow(fromPhone, staff, organisationId, 'ACCEPT');
+      return;
+    }
+  }
 
   const { rows } = await pool.query(
     `
@@ -283,15 +605,24 @@ async function handleAcceptCommand(fromPhone, organisationId) {
     client.release();
   }
 
+  const displayName = staff.name || staff.full_name || 'staff member';
   const msg =
-    `✅ Thank you *${staff.name}*, your shift has been *confirmed*.\n\n` +
+    `✅ Thank you *${displayName}*, your shift has been *confirmed*.\n\n` +
     'If your availability changes, please inform your ward manager as soon as possible.';
   await replyWhatsApp(fromPhone, msg);
 }
 
-async function handleDeclineCommand(fromPhone, organisationId) {
+async function handleDeclineCommand(fromPhone, organisationId, options = {}) {
   const staff = await getOrCreateStaffByPhone(fromPhone, organisationId);
   console.log('[DECLINE] Staff record:', staff);
+
+  if (!options.skipRegistrationCheck) {
+    const needsReg = await staffNeedsRegistration(staff.id, organisationId);
+    if (needsReg) {
+      await beginRegistrationFlow(fromPhone, staff, organisationId, 'DECLINE');
+      return;
+    }
+  }
 
   const { rows } = await pool.query(
     `
@@ -325,14 +656,26 @@ async function handleDeclineCommand(fromPhone, organisationId) {
     [offer.id]
   );
 
+  const displayName = staff.name || staff.full_name || 'staff member';
   const msg =
-    `❌ Thanks *${staff.name}*, we've recorded that you *cannot work* this shift.\n\n` +
+    `❌ Thanks *${displayName}*, we've recorded that you *cannot work* this shift.\n\n` +
     'Your manager may offer this shift to other staff.';
   await replyWhatsApp(fromPhone, msg);
 }
 
-async function handleInsightTodayCommand(fromPhone, organisationId) {
+async function handleInsightTodayCommand(fromPhone, organisationId, options = {}) {
   console.log('[INSIGHT TODAY] Start for', fromPhone, 'org', organisationId);
+
+  const staff = await getOrCreateStaffByPhone(fromPhone, organisationId);
+  console.log('[INSIGHT TODAY] Staff record:', staff);
+
+  if (!options.skipRegistrationCheck) {
+    const needsReg = await staffNeedsRegistration(staff.id, organisationId);
+    if (needsReg) {
+      await beginRegistrationFlow(fromPhone, staff, organisationId, 'INSIGHT TODAY');
+      return;
+    }
+  }
 
   try {
     // Ward-level view
@@ -392,11 +735,11 @@ async function handleInsightTodayCommand(fromPhone, organisationId) {
         const req = Number(w.total_required || 0);
         const fil = Number(w.total_filled || 0);
         const rem = req - fil;
-        const statusEmoji =
-          rem <= 0 ? '✅' : rem <= 2 ? '🟡' : '🔴';
+        const statusEmoji = rem <= 0 ? '✅' : rem <= 2 ? '🟡' : '🔴';
 
-        text +=
-          `• ${statusEmoji} *${w.ward}* – req ${req}, filled ${fil}, remaining ${rem < 0 ? 0 : rem}\n`;
+        text += `• ${statusEmoji} *${w.ward}* – req ${req}, filled ${fil}, remaining ${
+          rem < 0 ? 0 : rem
+        }\n`;
       }
       text += '\n';
     } else {
@@ -457,6 +800,13 @@ router.post('/webhook', async (req, res) => {
   try {
     if (!from) {
       console.error('[WEBHOOK] Missing from phone number');
+      return;
+    }
+
+    // If user is in the middle of registration, consume their reply first.
+    const activeSession = getRegistrationSession(from);
+    if (activeSession) {
+      await handleRegistrationReply(from, command, organisationId);
       return;
     }
 

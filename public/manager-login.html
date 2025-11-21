@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Priory SmartShift – Manager login (demo)</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    :root {
+      color-scheme: dark;
+    }
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: radial-gradient(circle at top, #16263b 0, #050814 55%, #02040a 100%);
+      color: #e5f1ff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+    }
+    .card {
+      background: rgba(6, 16, 32, 0.96);
+      border: 1px solid rgba(56, 189, 248, 0.3);
+      border-radius: 18px;
+      padding: 24px 28px;
+      max-width: 420px;
+      width: 100%;
+      box-shadow: 0 24px 60px rgba(15, 23, 42, 0.75);
+    }
+    .title {
+      font-size: 1.3rem;
+      font-weight: 600;
+      margin-bottom: 4px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .subtitle {
+      font-size: 0.9rem;
+      color: #9ca3af;
+      margin-bottom: 18px;
+    }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.75rem;
+      padding: 3px 8px;
+      border-radius: 999px;
+      background: rgba(22, 163, 74, 0.1);
+      color: #6ee7b7;
+      border: 1px solid rgba(16, 185, 129, 0.4);
+      margin-bottom: 10px;
+    }
+    .btn {
+      width: 100%;
+      padding: 10px 14px;
+      border-radius: 999px;
+      border: none;
+      font-size: 0.95rem;
+      font-weight: 500;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      background: linear-gradient(135deg, #22c55e, #16a34a);
+      color: #f9fafb;
+      box-shadow: 0 12px 30px rgba(34, 197, 94, 0.35);
+      transition: transform 0.12s ease, box-shadow 0.12s ease, opacity 0.12s ease;
+    }
+    .btn:disabled {
+      opacity: 0.6;
+      cursor: wait;
+      box-shadow: none;
+    }
+    .btn:not(:disabled):hover {
+      transform: translateY(-1px);
+      box-shadow: 0 16px 40px rgba(34, 197, 94, 0.45);
+    }
+    .hint {
+      font-size: 0.78rem;
+      color: #9ca3af;
+      margin-top: 10px;
+      line-height: 1.4;
+    }
+    .status {
+      font-size: 0.8rem;
+      margin-top: 12px;
+      min-height: 18px;
+    }
+    .status.ok {
+      color: #6ee7b7;
+    }
+    .status.error {
+      color: #fca5a5;
+    }
+    .logo {
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      font-size: 0.85rem;
+      color: #a5b4fc;
+      text-transform: uppercase;
+      margin-bottom: 2px;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="logo">Priory SmartShift</div>
+    <div class="title">
+      Manager login
+      <span style="font-size:0.8rem; color:#9ca3af;">(demo)</span>
+    </div>
+    <p class="subtitle">
+      This screen is only for testing. It will create a demo manager token and
+      redirect you to the live dashboard.
+    </p>
+
+    <div class="badge">
+      <span>●</span>
+      <span>Localhost / dev only</span>
+    </div>
+
+    <button id="demoLoginBtn" class="btn" type="button">
+      <span>Login as demo manager</span>
+    </button>
+
+    <div id="status" class="status"></div>
+
+    <p class="hint">
+      You should only see this screen in development. In production, managers
+      will log in with their real Priory credentials (or SSO).
+    </p>
+  </div>
+
+  <script>
+    async function loginAsDemoManager() {
+      const btn = document.getElementById('demoLoginBtn');
+      const statusEl = document.getElementById('status');
+
+      statusEl.className = 'status';
+      statusEl.textContent = '';
+
+      try {
+        btn.disabled = true;
+        statusEl.textContent = 'Requesting demo token from API...';
+
+        const res = await fetch('/api/debug/test-token');
+        if (!res.ok) {
+          throw new Error('API returned ' + res.status);
+        }
+
+        const data = await res.json();
+        if (!data.token) {
+          throw new Error('No token in response');
+        }
+
+        // Save token so the dashboard can use it
+        localStorage.setItem('managerToken', data.token);
+
+        statusEl.classList.add('ok');
+        statusEl.textContent = 'Token saved ✔ Redirecting to dashboard...';
+
+        // Small delay so you can see the status text
+        setTimeout(() => {
+          window.location.href = '/manager-dashboard.html';
+        }, 600);
+      } catch (err) {
+        console.error('[LOGIN] Demo login error:', err);
+        btn.disabled = false;
+        statusEl.classList.add('error');
+        statusEl.textContent =
+          'Unable to get demo token. Check that the server is running and /api/debug/test-token is available.';
+      }
+    }
+
+    document
+      .getElementById('demoLoginBtn')
+      .addEventListener('click', loginAsDemoManager);
+  </script>
+</body>
+</html>
