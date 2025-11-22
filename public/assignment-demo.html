@@ -1,0 +1,844 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Priory SmartShift – AI Shift Recommendations</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    :root {
+      --bg: #0f172a;
+      --bg-card: #020617;
+      --bg-card-soft: #02081a;
+      --accent: #38bdf8;
+      --accent-soft: rgba(56, 189, 248, 0.09);
+      --accent-strong: rgba(56, 189, 248, 0.18);
+      --text-main: #e5e7eb;
+      --text-soft: #9ca3af;
+      --danger: #f97373;
+      --warning: #fbbf24;
+      --success: #22c55e;
+      --border-subtle: rgba(148, 163, 184, 0.25);
+      --chip-bg: rgba(15, 23, 42, 0.8);
+      --chip-border: rgba(148, 163, 184, 0.4);
+      --shadow-soft: 0 22px 60px rgba(15, 23, 42, 0.85);
+      --radius-xl: 18px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      padding: 32px;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text",
+        "Segoe UI", sans-serif;
+      background: radial-gradient(circle at top, #1e293b 0, #020617 55%);
+      color: var(--text-main);
+    }
+
+    .app-shell {
+      max-width: 1120px;
+      margin: 0 auto;
+    }
+
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 24px;
+      gap: 16px;
+    }
+
+    .branding {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .app-title {
+      font-size: 1.4rem;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: #f9fafb;
+    }
+
+    .app-subtitle {
+      font-size: 0.9rem;
+      color: var(--text-soft);
+    }
+
+    .pill {
+      padding: 6px 12px;
+      border-radius: 999px;
+      border: 1px solid var(--border-subtle);
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-soft);
+      background: radial-gradient(circle at top left, #0f172a 0, #020617 55%);
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .pill span.dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      background: #22c55e;
+      box-shadow: 0 0 12px rgba(34, 197, 94, 0.9);
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1.1fr) minmax(0, 1.2fr);
+      gap: 20px;
+    }
+
+    .card {
+      background: radial-gradient(circle at top left, #020617 0, #000 60%);
+      border-radius: var(--radius-xl);
+      border: 1px solid rgba(148, 163, 184, 0.35);
+      box-shadow: var(--shadow-soft);
+      padding: 18px 18px 16px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .card::before {
+      content: "";
+      position: absolute;
+      inset: -40%;
+      background: radial-gradient(
+        circle at top left,
+        rgba(56, 189, 248, 0.1),
+        transparent 55%
+      );
+      opacity: 0.7;
+      pointer-events: none;
+    }
+
+    .card-inner {
+      position: relative;
+      z-index: 1;
+    }
+
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 16px;
+      margin-bottom: 12px;
+    }
+
+    .card-title {
+      font-size: 0.95rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #e5e7eb;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .card-title span.badge {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      padding: 4px 8px;
+      border-radius: 999px;
+      background: var(--accent-soft);
+      border: 1px solid rgba(56, 189, 248, 0.5);
+      color: #e0f2fe;
+    }
+
+    .card-subtitle {
+      font-size: 0.85rem;
+      color: var(--text-soft);
+    }
+
+    .field-row {
+      display: flex;
+      align-items: flex-end;
+      gap: 10px;
+      margin-bottom: 14px;
+      flex-wrap: wrap;
+    }
+
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      min-width: 0;
+      flex: 1;
+    }
+
+    .field-label {
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-soft);
+    }
+
+    input[type="number"],
+    input[type="text"] {
+      background: rgba(15, 23, 42, 0.98);
+      border-radius: 10px;
+      border: 1px solid var(--border-subtle);
+      padding: 8px 10px;
+      font-size: 0.9rem;
+      color: var(--text-main);
+      outline: none;
+      width: 100%;
+    }
+
+    input[type="number"]:focus,
+    input[type="text"]:focus {
+      border-color: rgba(56, 189, 248, 0.8);
+      box-shadow: 0 0 0 1px rgba(56, 189, 248, 0.5);
+    }
+
+    button.primary {
+      background: linear-gradient(135deg, #0ea5e9, #22c55e);
+      border-radius: 999px;
+      border: none;
+      color: #0b1120;
+      padding: 9px 16px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      box-shadow: 0 14px 35px rgba(56, 189, 248, 0.35);
+      white-space: nowrap;
+    }
+
+    button.primary:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      box-shadow: none;
+    }
+
+    button.primary span.icon {
+      font-size: 1rem;
+    }
+
+    .hint {
+      font-size: 0.78rem;
+      color: var(--text-soft);
+      margin-top: 4px;
+    }
+
+    .status-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      margin-top: 10px;
+      font-size: 0.8rem;
+      color: var(--text-soft);
+    }
+
+    .status-pill {
+      border-radius: 999px;
+      padding: 4px 10px;
+      border: 1px solid var(--border-subtle);
+      background: rgba(15, 23, 42, 0.9);
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .status-pill span.dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 999px;
+      background: var(--accent);
+    }
+
+    .status-pill.error span.dot {
+      background: var(--danger);
+    }
+
+    .status-pill.ok span.dot {
+      background: var(--success);
+    }
+
+    .status-text-strong {
+      color: #e5e7eb;
+      font-weight: 500;
+    }
+
+    .grid-two {
+      display: grid;
+      grid-template-columns: minmax(0, 1.1fr) minmax(0, 1.2fr);
+      gap: 16px;
+      margin-top: 4px;
+    }
+
+    .shift-meta {
+      font-size: 0.86rem;
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px 12px;
+    }
+
+    .meta-item-label {
+      font-size: 0.76rem;
+      color: var(--text-soft);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .meta-item-value {
+      font-size: 0.9rem;
+      color: var(--text-main);
+      margin-top: 2px;
+    }
+
+    .pill-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      border-radius: 999px;
+      background: var(--chip-bg);
+      border: 1px solid var(--chip-border);
+      font-size: 0.78rem;
+      color: var(--text-soft);
+    }
+
+    .pill-chip strong {
+      color: #e5e7eb;
+    }
+
+    .card-section-title {
+      font-size: 0.82rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-soft);
+      margin-bottom: 6px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.82rem;
+    }
+
+    thead {
+      background: rgba(15, 23, 42, 0.95);
+    }
+
+    th,
+    td {
+      padding: 6px 8px;
+      text-align: left;
+      border-bottom: 1px solid rgba(30, 64, 175, 0.5);
+    }
+
+    th {
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      font-size: 0.75rem;
+      color: var(--text-soft);
+    }
+
+    tbody tr:nth-child(even) td {
+      background: rgba(15, 23, 42, 0.7);
+    }
+
+    .score-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 3px 8px;
+      border-radius: 999px;
+      background: var(--accent-soft);
+      border: 1px solid rgba(56, 189, 248, 0.7);
+      font-size: 0.78rem;
+      color: #e0f2fe;
+    }
+
+    .eligible-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 3px 8px;
+      border-radius: 999px;
+      font-size: 0.78rem;
+      border: 1px solid rgba(34, 197, 94, 0.7);
+      background: rgba(34, 197, 94, 0.15);
+      color: #bbf7d0;
+    }
+
+    .eligible-badge.no {
+      border-color: rgba(248, 113, 113, 0.7);
+      background: rgba(248, 113, 113, 0.15);
+      color: #fecaca;
+    }
+
+    .reasons-list {
+      margin: 0;
+      padding-left: 18px;
+      font-size: 0.8rem;
+      color: var(--text-soft);
+    }
+
+    .reasons-list li {
+      margin-bottom: 2px;
+    }
+
+    footer {
+      margin-top: 24px;
+      padding-top: 12px;
+      border-top: 1px solid rgba(148, 163, 184, 0.35);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.78rem;
+      color: var(--text-soft);
+    }
+
+    footer .brand-credits {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    footer .brand-credits span.dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 999px;
+      background: var(--accent);
+    }
+
+    footer .labour-prefect {
+      color: #e5e7eb;
+      font-weight: 500;
+    }
+
+    @media (max-width: 900px) {
+      .layout,
+      .grid-two {
+        grid-template-columns: minmax(0, 1fr);
+      }
+
+      body {
+        padding: 20px;
+      }
+
+      header {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app-shell">
+    <header>
+      <div class="branding">
+        <div class="app-title">Priory SmartShift</div>
+        <div class="app-subtitle">
+          AI-assisted shift recommendations demo (manager view)
+        </div>
+      </div>
+      <div class="pill">
+        <span class="dot"></span>
+        AI assignment engine · Manager
+      </div>
+    </header>
+
+    <div class="layout">
+      <!-- LEFT: Shift selector + meta -->
+      <section class="card">
+        <div class="card-inner">
+          <div class="card-header">
+            <div class="card-title">
+              Shift selection
+              <span class="badge">Step 1</span>
+            </div>
+          </div>
+
+          <div class="card-subtitle">
+            Enter a shift ID to see AI-recommended staff, based on:
+            contract hours, ward familiarity, gender requirements, training
+            status and recent workload.
+          </div>
+
+          <div class="field-row" style="margin-top: 14px;">
+            <div class="field">
+              <label class="field-label" for="shiftIdInput">
+                Shift ID
+              </label>
+              <input
+                id="shiftIdInput"
+                type="number"
+                min="1"
+                step="1"
+                placeholder="e.g. 2"
+              />
+              <div class="hint">
+                Tip: try ID <code>2</code> (Alder – Registered Nurse) which you
+                used in curl.
+              </div>
+            </div>
+            <div class="field" style="flex: 0 0 auto; width: 170px;">
+              <label class="field-label">&nbsp;</label>
+              <button id="fetchBtn" class="primary">
+                <span class="icon">⚡</span>
+                Get AI picks
+              </button>
+            </div>
+          </div>
+
+          <div class="status-bar">
+            <div id="statusMessage" class="status-pill">
+              <span class="dot"></span>
+              <span>Ready. Using manager token from login.</span>
+            </div>
+            <div class="hint" id="tokenHint"></div>
+          </div>
+
+          <div id="shiftMetaContainer" style="margin-top: 16px; display: none;">
+            <div class="card-section-title">Selected shift</div>
+            <div class="grid-two">
+              <div class="shift-meta">
+                <div>
+                  <div class="meta-item-label">Ward</div>
+                  <div class="meta-item-value" id="metaWard">–</div>
+                </div>
+                <div>
+                  <div class="meta-item-label">Role</div>
+                  <div class="meta-item-value" id="metaRole">–</div>
+                </div>
+                <div>
+                  <div class="meta-item-label">Date &amp; time</div>
+                  <div class="meta-item-value" id="metaDateTime">–</div>
+                </div>
+                <div>
+                  <div class="meta-item-label">Status</div>
+                  <div class="meta-item-value" id="metaStatus">–</div>
+                </div>
+              </div>
+              <div class="shift-meta">
+                <div>
+                  <div class="meta-item-label">Required vs filled</div>
+                  <div class="meta-item-value">
+                    <span id="metaRequired">–</span> required ·
+                    <span id="metaFilled">–</span> filled
+                  </div>
+                </div>
+                <div>
+                  <div class="meta-item-label">Gender requirement</div>
+                  <div class="meta-item-value" id="metaGender">–</div>
+                </div>
+                <div>
+                  <div class="meta-item-label">Shift reference</div>
+                  <div class="meta-item-value" id="metaShiftRef">–</div>
+                </div>
+                <div>
+                  <div class="meta-item-label">Organisation</div>
+                  <div class="meta-item-value">Priory – Org 1</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- RIGHT: Recommendations -->
+      <section class="card">
+        <div class="card-inner">
+          <div class="card-header">
+            <div class="card-title">
+              AI recommended staff
+              <span class="badge">Step 2</span>
+            </div>
+          </div>
+
+          <div class="card-subtitle">
+            Ranked list of staff for this shift, with an explanation of why
+            each person is suggested (contract hours, familiarity, preferences,
+            etc.).
+          </div>
+
+          <div id="noDataMessage" class="hint" style="margin-top: 10px;">
+            No recommendations yet. Choose a shift and click
+            <strong>Get AI picks</strong>.
+          </div>
+
+          <div id="recommendationsContainer" style="margin-top: 10px; display: none;">
+            <div class="card-section-title">Top 5 recommended staff</div>
+            <div style="overflow-x: auto; margin-bottom: 8px;">
+              <table>
+                <thead>
+                  <tr>
+                    <th>#</th>
+                    <th>Staff</th>
+                    <th>Ward</th>
+                    <th>Type</th>
+                    <th>Pref shift</th>
+                    <th>Score</th>
+                    <th>Eligible</th>
+                    <th>Week hrs</th>
+                  </tr>
+                </thead>
+                <tbody id="topRecommendationsBody"></tbody>
+              </table>
+            </div>
+
+            <div class="card-section-title" style="margin-top: 10px;">
+              Why the top pick is suggested
+            </div>
+            <ul id="topReasonsList" class="reasons-list"></ul>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <footer>
+      <div class="brand-credits">
+        <span class="dot"></span>
+        <span>Priory SmartShift · Assignment engine demo</span>
+      </div>
+      <div>
+        Powered by <span class="labour-prefect">The Labour Prefect</span>
+      </div>
+    </footer>
+  </div>
+
+  <script>
+    const fetchBtn = document.getElementById('fetchBtn');
+    const statusMessage = document.getElementById('statusMessage');
+    const tokenHint = document.getElementById('tokenHint');
+    const noDataMessage = document.getElementById('noDataMessage');
+    const recommendationsContainer = document.getElementById('recommendationsContainer');
+    const shiftMetaContainer = document.getElementById('shiftMetaContainer');
+
+    const metaWard = document.getElementById('metaWard');
+    const metaRole = document.getElementById('metaRole');
+    const metaDateTime = document.getElementById('metaDateTime');
+    const metaStatus = document.getElementById('metaStatus');
+    const metaRequired = document.getElementById('metaRequired');
+    const metaFilled = document.getElementById('metaFilled');
+    const metaGender = document.getElementById('metaGender');
+    const metaShiftRef = document.getElementById('metaShiftRef');
+
+    const topRecommendationsBody = document.getElementById('topRecommendationsBody');
+    const topReasonsList = document.getElementById('topReasonsList');
+
+    function setStatus(ok, text) {
+      statusMessage.classList.remove('error', 'ok');
+      if (ok === true) {
+        statusMessage.classList.add('ok');
+      } else if (ok === false) {
+        statusMessage.classList.add('error');
+      }
+      const span = statusMessage.querySelector('span:last-child');
+      if (span) {
+        span.textContent = text;
+      }
+    }
+
+    // Check for token in localStorage (set by manager-login.html)
+    const managerToken = localStorage.getItem('managerToken');
+    if (!managerToken) {
+      setStatus(false, 'No manager token found. Please log in as demo manager first.');
+      tokenHint.textContent = 'Open /manager-login.html, click "Login as demo manager", then return here.';
+      fetchBtn.disabled = true;
+    } else {
+      setStatus(true, 'Ready. Using manager token from login.');
+      tokenHint.textContent = '';
+    }
+
+    function formatTimeRange(start, end) {
+      if (!start || !end) return '–';
+      const s = String(start).slice(0, 5);
+      const e = String(end).slice(0, 5);
+      return `${s}–${e}`;
+    }
+
+    function formatDateISO(dateStr) {
+      if (!dateStr) return '–';
+      const d = new Date(dateStr);
+      if (Number.isNaN(d.getTime())) return '–';
+      return d.toLocaleDateString('en-GB', {
+        weekday: 'short',
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
+      });
+    }
+
+    function niceGender(g) {
+      if (!g || g === 'any') return '⚧ Any';
+      if (g === 'female') return '♀ Female only';
+      if (g === 'male') return '♂ Male only';
+      return g;
+    }
+
+    function niceStaffType(t) {
+      if (!t) return '–';
+      if (t === 'permanent') return 'Permanent';
+      if (t === 'bank') return 'Bank';
+      if (t === 'agency') return 'Agency';
+      return t;
+    }
+
+    function nicePref(p) {
+      if (!p) return '–';
+      if (p.toLowerCase() === 'day') return 'Day';
+      if (p.toLowerCase() === 'night') return 'Night';
+      if (p.toLowerCase() === 'any') return 'Any';
+      return p;
+    }
+
+    fetchBtn.addEventListener('click', async () => {
+      if (!managerToken) return;
+
+      const input = document.getElementById('shiftIdInput');
+      const shiftIdRaw = input.value.trim();
+      if (!shiftIdRaw) {
+        setStatus(false, 'Please enter a shift ID first.');
+        return;
+      }
+
+      const shiftId = parseInt(shiftIdRaw, 10);
+      if (Number.isNaN(shiftId) || shiftId <= 0) {
+        setStatus(false, `Invalid shift ID: ${shiftIdRaw}`);
+        return;
+      }
+
+      fetchBtn.disabled = true;
+      setStatus(true, `Loading AI recommendations for shift #${shiftId}...`);
+      noDataMessage.style.display = 'none';
+      recommendationsContainer.style.display = 'none';
+      shiftMetaContainer.style.display = 'none';
+      topRecommendationsBody.innerHTML = '';
+      topReasonsList.innerHTML = '';
+
+      try {
+        const res = await fetch(`/api/manager/assign/shift/${shiftId}/recommendations`, {
+          headers: {
+            'Authorization': `Bearer ${managerToken}`,
+            'Accept': 'application/json'
+          }
+        });
+
+        if (!res.ok) {
+          const text = await res.text();
+          console.error('Assignment API error:', res.status, text);
+          setStatus(false, `API error ${res.status}. See console for details.`);
+          noDataMessage.style.display = 'block';
+          return;
+        }
+
+        const data = await res.json();
+        if (!data.success) {
+          setStatus(false, data.error || 'Assignment engine reported a failure.');
+          noDataMessage.style.display = 'block';
+          return;
+        }
+
+        // Populate shift meta
+        const shift = data.shift || {};
+        metaWard.textContent = shift.ward || '–';
+        metaRole.textContent = shift.role_required || '–';
+        const dateLabel = formatDateISO(shift.shift_date);
+        const timeLabel = formatTimeRange(shift.start_time, shift.end_time);
+        metaDateTime.textContent = `${dateLabel} (${timeLabel})`;
+        metaStatus.textContent = shift.status || '–';
+        metaRequired.textContent = shift.number_required ?? '–';
+        metaFilled.textContent = shift.number_filled ?? '–';
+        metaGender.textContent = niceGender(shift.gender_required);
+        metaShiftRef.textContent = shift.shift_ref || `#${shift.id || '–'}`;
+        shiftMetaContainer.style.display = 'block';
+
+        // Populate recommendations
+        const top = data.top_recommendations || [];
+        if (!top.length) {
+          setStatus(false, 'No eligible staff found for this shift.');
+          noDataMessage.style.display = 'block';
+          return;
+        }
+
+        topRecommendationsBody.innerHTML = '';
+        top.forEach((rec, idx) => {
+          const tr = document.createElement('tr');
+
+          const tdRank = document.createElement('td');
+          tdRank.textContent = idx + 1;
+          tr.appendChild(tdRank);
+
+          const tdStaff = document.createElement('td');
+          const name = rec.staff_name || `Staff #${rec.staff_id}`;
+          tdStaff.textContent = name;
+          tr.appendChild(tdStaff);
+
+          const tdWard = document.createElement('td');
+          tdWard.textContent = rec.ward || '–';
+          tr.appendChild(tdWard);
+
+          const tdType = document.createElement('td');
+          tdType.textContent = niceStaffType(rec.staff_type);
+          tr.appendChild(tdType);
+
+          const tdPref = document.createElement('td');
+          tdPref.textContent = nicePref(rec.preferred_shift);
+          tr.appendChild(tdPref);
+
+          const tdScore = document.createElement('td');
+          const scoreBadge = document.createElement('span');
+          scoreBadge.className = 'score-badge';
+          scoreBadge.textContent = String(rec.score ?? '–');
+          tdScore.appendChild(scoreBadge);
+          tr.appendChild(tdScore);
+
+          const tdEligible = document.createElement('td');
+          const eligBadge = document.createElement('span');
+          eligBadge.className = 'eligible-badge' + (rec.eligible ? '' : ' no');
+          eligBadge.textContent = rec.eligible ? 'Eligible' : 'Blocked';
+          tdEligible.appendChild(eligBadge);
+          tr.appendChild(tdEligible);
+
+          const tdWeek = document.createElement('td');
+          const hours = rec.weekly_hours ?? 0;
+          const days = rec.weekly_days ?? 0;
+          tdWeek.textContent = `${hours}h / ${days}d`;
+          tr.appendChild(tdWeek);
+
+          topRecommendationsBody.appendChild(tr);
+        });
+
+        // Show reasons for the top pick
+        topReasonsList.innerHTML = '';
+        const topOne = top[0];
+        if (topOne && Array.isArray(topOne.reasons)) {
+          topOne.reasons.forEach((r) => {
+            const li = document.createElement('li');
+            li.textContent = r;
+            topReasonsList.appendChild(li);
+          });
+        }
+
+        recommendationsContainer.style.display = 'block';
+        setStatus(true, `Loaded ${top.length} AI recommendations for this shift.`);
+      } catch (err) {
+        console.error('Assignment fetch error:', err);
+        setStatus(false, 'Failed to fetch AI recommendations. See console for details.');
+        noDataMessage.style.display = 'block';
+      } finally {
+        fetchBtn.disabled = !managerToken;
+      }
+    });
+  </script>
+</body>
+</html>
