@@ -2,636 +2,626 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Priory SmartShift – Manager dashboard</title>
+  <title>Priory SmartShift – Manager Dashboard</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
     :root {
-      --bg: #020617;
-      --bg-elevated: #020b1e;
-      --bg-card: #020818;
-      --border-soft: #1e293b;
+      --bg: #0f172a;
+      --bg-soft: #111827;
+      --bg-card: #020617;
+      --border-subtle: rgba(148, 163, 184, 0.25);
       --accent: #22c55e;
-      --accent-soft: rgba(34, 197, 94, 0.12);
-      --accent-strong: rgba(34, 197, 94, 0.9);
-      --danger-soft: rgba(248, 113, 113, 0.12);
-      --danger: #f97373;
+      --accent-soft: rgba(34, 197, 94, 0.15);
+      --accent-strong: #16a34a;
       --text: #e5e7eb;
-      --text-muted: #9ca3af;
-      --chip: #020617;
-      --chip-border: #1f2933;
-      --shadow-soft: 0 18px 40px rgba(15, 23, 42, 0.9);
+      --muted: #9ca3af;
+      --danger: #ef4444;
+      --danger-soft: rgba(239, 68, 68, 0.12);
+      --warning: #f97316;
+      --warning-soft: rgba(249, 115, 22, 0.12);
+      --info-soft: rgba(59, 130, 246, 0.15);
+      --radius-lg: 18px;
+      --radius-xl: 26px;
+      --shadow-soft: 0 18px 40px rgba(15, 23, 42, 0.75);
     }
 
-    * { box-sizing: border-box; }
+    * {
+      box-sizing: border-box;
+    }
 
     body {
       margin: 0;
-      min-height: 100vh;
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text",
-        "Segoe UI", sans-serif;
-      background: radial-gradient(circle at top, #020617 0, #020617 50%, #000 100%);
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: radial-gradient(circle at top, #1e293b 0, #020617 55%, #000 100%);
       color: var(--text);
+      min-height: 100vh;
+      padding: 24px;
     }
 
-    .app-shell {
+    .page {
       max-width: 1200px;
       margin: 0 auto;
-      padding: 18px 20px 48px;
     }
 
     header {
       display: flex;
-      align-items: center;
       justify-content: space-between;
-      margin-bottom: 18px;
-    }
-
-    .brand {
-      display: flex;
-      flex-direction: column;
-      gap: 2px;
-    }
-
-    .brand-row {
-      display: flex;
       align-items: center;
-      gap: 8px;
-      font-weight: 600;
-      letter-spacing: 0.02em;
-    }
-
-    .brand-dot {
-      width: 9px;
-      height: 9px;
-      border-radius: 999px;
-      background: #22c55e;
-      box-shadow: 0 0 12px rgba(34, 197, 94, 0.9);
-    }
-
-    .brand-row span {
-      font-size: 15px;
-    }
-
-    .brand-sub {
-      font-size: 11px;
-      text-transform: uppercase;
-      color: var(--text-muted);
-      letter-spacing: 0.16em;
-    }
-
-    .top-controls {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-
-    .chip {
-      border-radius: 999px;
-      border: 1px solid var(--chip-border);
-      background: rgba(15, 23, 42, 0.9);
-      padding: 5px 10px;
-      font-size: 11px;
-      color: var(--text-muted);
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-    }
-
-    .chip-dot {
-      width: 7px;
-      height: 7px;
-      border-radius: 999px;
-      background: #16a34a;
-      box-shadow: 0 0 8px rgba(22, 163, 74, 0.8);
-    }
-
-    .btn {
-      border-radius: 999px;
-      padding: 5px 14px;
-      font-size: 11px;
-      border: 1px solid rgba(148, 163, 184, 0.2);
-      background: radial-gradient(circle at top left, #22c55e 0, #15803d 36%, #020617 100%);
-      color: #e5fbea;
-      cursor: pointer;
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      box-shadow: 0 10px 25px rgba(34, 197, 94, 0.35);
-      transition: transform 0.1s ease, box-shadow 0.1s ease, filter 0.1s ease;
-    }
-
-    .btn span {
-      font-size: 13px;
-      font-weight: 500;
-    }
-
-    .btn:hover {
-      transform: translateY(-1px);
-      filter: brightness(1.05);
-      box-shadow: 0 14px 32px rgba(34, 197, 94, 0.5);
-    }
-
-    .btn-secondary {
-      background: rgba(15, 23, 42, 0.96);
-      border-color: rgba(148, 163, 184, 0.35);
-      color: var(--text);
-      box-shadow: 0 0 0 rgba(0, 0, 0, 0);
-    }
-
-    .btn-secondary:hover {
-      background: rgba(15, 23, 42, 1);
-      border-color: var(--accent-strong);
-    }
-
-    main {
-      display: flex;
-      flex-direction: column;
+      margin-bottom: 24px;
       gap: 16px;
     }
 
-    .row {
-      display: grid;
-      grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
-      gap: 16px;
+    .title-block h1 {
+      margin: 0;
+      font-size: 1.6rem;
+      letter-spacing: 0.03em;
     }
 
-    .card {
-      background: radial-gradient(circle at top left, #020617 0, #020b1e 40%, #020617 100%);
-      border-radius: 18px;
-      border: 1px solid rgba(15, 23, 42, 0.95);
-      box-shadow: var(--shadow-soft);
-      padding: 14px 16px 12px;
-      position: relative;
-      overflow: hidden;
-    }
-
-    .card::before {
-      content: "";
-      position: absolute;
-      inset: 0;
-      background:
-        radial-gradient(circle at 0 0, rgba(56, 189, 248, 0.08), transparent 55%),
-        radial-gradient(circle at 100% 0, rgba(34, 197, 94, 0.06), transparent 55%);
-      opacity: 0.7;
-      pointer-events: none;
-    }
-
-    .card-inner {
-      position: relative;
-      z-index: 1;
-    }
-
-    .card-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: baseline;
-      margin-bottom: 8px;
-      gap: 12px;
-    }
-
-    .card-title {
-      font-size: 15px;
-      font-weight: 600;
-      letter-spacing: 0.06em;
-      text-transform: uppercase;
-    }
-
-    .card-subtitle {
-      font-size: 11px;
-      color: var(--text-muted);
-    }
-
-    .card-header-right {
-      text-align: right;
-      font-size: 11px;
-      color: var(--text-muted);
-    }
-
-    .pill {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      border-radius: 999px;
-      border: 1px solid rgba(148, 163, 184, 0.3);
-      padding: 3px 9px;
-      font-size: 10px;
-      background: rgba(15, 23, 42, 0.9);
-    }
-
-    .pill-dot {
-      width: 7px;
-      height: 7px;
-      border-radius: 999px;
-      background: #22c55e;
-      box-shadow: 0 0 10px rgba(34, 197, 94, 0.7);
-    }
-
-    .metrics-row {
-      display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 10px;
-      margin-bottom: 10px;
-    }
-
-    .metric {
-      border-radius: 14px;
-      border: 1px solid rgba(30, 64, 175, 0.65);
-      background: linear-gradient(145deg, rgba(15, 23, 42, 0.95), #020617);
-      padding: 8px 12px;
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-    }
-
-    .metric-label {
-      font-size: 11px;
-      color: var(--text-muted);
-      text-transform: uppercase;
-      letter-spacing: 0.12em;
-    }
-
-    .metric-value {
-      font-size: 17px;
-      font-weight: 600;
-    }
-
-    .metric-caption {
-      font-size: 10px;
-      color: var(--text-muted);
+    .title-block p {
+      margin: 4px 0 0;
+      color: var(--muted);
+      font-size: 0.9rem;
     }
 
     .badge {
       display: inline-flex;
       align-items: center;
+      gap: 8px;
+      padding: 6px 12px;
+      border-radius: 999px;
+      background: rgba(34, 197, 94, 0.07);
+      border: 1px solid rgba(34, 197, 94, 0.28);
+      font-size: 0.8rem;
+      color: var(--accent);
+    }
+
+    .badge span.dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      background: var(--accent);
+      box-shadow: 0 0 10px rgba(34, 197, 94, 0.7);
+    }
+
+    button.primary {
+      padding: 8px 14px;
+      border-radius: 999px;
+      border: none;
+      cursor: pointer;
+      font-size: 0.9rem;
+      background: linear-gradient(to right, var(--accent), var(--accent-strong));
+      color: #0b1120;
+      display: inline-flex;
+      align-items: center;
       gap: 6px;
+      box-shadow: 0 12px 25px rgba(34, 197, 94, 0.45);
+    }
+
+    button.primary:hover {
+      filter: brightness(1.05);
+    }
+
+    button.secondary {
+      padding: 8px 14px;
       border-radius: 999px;
-      padding: 2px 8px;
-      font-size: 10px;
-      background: rgba(15, 23, 42, 0.9);
-      border: 1px solid rgba(148, 163, 184, 0.3);
-      color: var(--text-muted);
+      border: 1px solid var(--border-subtle);
+      background: rgba(15, 23, 42, 0.7);
+      color: var(--text);
+      cursor: pointer;
+      font-size: 0.85rem;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
     }
 
-    .badge-dot {
-      width: 7px;
-      height: 7px;
-      border-radius: 999px;
-      background: #3b82f6;
-      box-shadow: 0 0 10px rgba(59, 130, 246, 0.7);
+    button.secondary:hover {
+      border-color: rgba(148, 163, 184, 0.6);
     }
 
-    .ai-summary-text {
-      font-size: 24px;
-      font-weight: 600;
-      text-transform: lowercase;
+    .cards-grid {
+      display: grid;
+      grid-template-columns: 2.2fr 1.5fr;
+      gap: 18px;
+      margin-bottom: 18px;
     }
 
-    .ai-summary-text.neutral { color: #e5e7eb; }
-    .ai-summary-text.warning { color: #facc15; }
-    .ai-summary-text.risk { color: #f97373; }
-
-    .ai-body {
-      margin-top: 10px;
-      font-size: 12px;
-      line-height: 1.5;
-      color: var(--text-muted);
-      padding: 10px 12px;
-      border-radius: 12px;
-      border: 1px solid rgba(148, 163, 184, 0.25);
-      background: linear-gradient(
-        120deg,
-        rgba(22, 163, 74, 0.08),
-        rgba(15, 23, 42, 0.98)
-      );
-    }
-
-    .table-container {
-      margin-top: 8px;
-      border-radius: 14px;
-      border: 1px solid rgba(30, 64, 175, 0.65);
-      background: rgba(15, 23, 42, 0.94);
+    .card {
+      background: radial-gradient(circle at top left, rgba(15, 23, 42, 0.9), var(--bg-card));
+      border-radius: var(--radius-xl);
+      padding: 18px 20px;
+      border: 1px solid rgba(30, 64, 175, 0.45);
+      box-shadow: var(--shadow-soft);
+      position: relative;
       overflow: hidden;
+    }
+
+    .card h2 {
+      margin: 0;
+      font-size: 1rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .card h3 {
+      margin: 10px 0 6px;
+      font-size: 0.9rem;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+    }
+
+    .card .card-subtitle {
+      margin: 4px 0 14px;
+      font-size: 0.85rem;
+      color: var(--muted);
+    }
+
+    .pill-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 10px;
+    }
+
+    .pill {
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: rgba(15, 23, 42, 0.9);
+      border: 1px solid var(--border-subtle);
+      font-size: 0.8rem;
+      color: var(--muted);
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .pill strong {
+      color: var(--text);
+    }
+
+    .pill.bad {
+      border-color: rgba(248, 113, 113, 0.7);
+      background: var(--danger-soft);
+      color: #fecaca;
+    }
+
+    .pill.good {
+      border-color: rgba(52, 211, 153, 0.7);
+      background: var(--accent-soft);
+      color: #bbf7d0;
+    }
+
+    .stat-row {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+      margin: 14px 0 8px;
+    }
+
+    .stat {
+      padding: 10px 12px;
+      border-radius: 14px;
+      background: rgba(15, 23, 42, 0.92);
+      border: 1px solid var(--border-subtle);
+    }
+
+    .stat-label {
+      font-size: 0.78rem;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.13em;
+    }
+
+    .stat-value {
+      margin-top: 4px;
+      font-size: 1.1rem;
+      font-weight: 600;
+    }
+
+    .stat-value.bad {
+      color: #fecaca;
+    }
+
+    .stat-value.good {
+      color: #bbf7d0;
+    }
+
+    .date-label {
+      font-size: 0.85rem;
+      color: var(--muted);
+      margin-top: 4px;
+    }
+
+    .table-wrapper {
+      margin-top: 14px;
+      border-radius: 16px;
+      border: 1px solid var(--border-subtle);
+      overflow: hidden;
+      background: radial-gradient(circle at top left, rgba(15, 23, 42, 0.9), #020617);
     }
 
     table {
       width: 100%;
       border-collapse: collapse;
-      font-size: 11px;
+      font-size: 0.82rem;
     }
 
     thead {
-      background: rgba(15, 23, 42, 0.98);
+      background: rgba(15, 23, 42, 0.9);
     }
 
-    th, td {
-      padding: 7px 9px;
+    th,
+    td {
+      padding: 8px 10px;
       text-align: left;
-      border-bottom: 1px solid rgba(15, 23, 42, 0.85);
+      border-bottom: 1px solid rgba(30, 64, 175, 0.45);
     }
 
     th {
       font-weight: 500;
-      color: var(--text-muted);
+      color: var(--muted);
       text-transform: uppercase;
-      letter-spacing: 0.14em;
-      font-size: 10px;
+      letter-spacing: 0.12em;
+      font-size: 0.75rem;
     }
 
-    tr:last-child td {
+    tbody tr:last-child td {
       border-bottom: none;
     }
 
-    tr:nth-child(even) td {
-      background: rgba(15, 23, 42, 0.92);
+    tbody tr:nth-child(even) {
+      background: rgba(15, 23, 42, 0.75);
     }
 
     .status-pill {
       display: inline-flex;
       align-items: center;
-      gap: 4px;
+      padding: 3px 9px;
       border-radius: 999px;
-      padding: 2px 7px;
-      font-size: 10px;
+      font-size: 0.75rem;
       text-transform: uppercase;
-      letter-spacing: 0.13em;
+      letter-spacing: 0.1em;
     }
 
     .status-open {
       background: var(--danger-soft);
-      color: var(--danger);
-      border: 1px solid rgba(248, 113, 113, 0.55);
+      color: #fecaca;
+      border: 1px solid rgba(248, 113, 113, 0.7);
     }
 
     .status-filled {
       background: var(--accent-soft);
-      color: var(--accent-strong);
-      border: 1px solid rgba(34, 197, 94, 0.7);
+      color: #bbf7d0;
+      border: 1px solid rgba(52, 211, 153, 0.7);
     }
 
     .status-part {
-      background: rgba(234, 179, 8, 0.15);
-      color: #fbbf24;
-      border: 1px solid rgba(234, 179, 8, 0.6);
+      background: var(--warning-soft);
+      color: #fed7aa;
+      border: 1px solid rgba(249, 115, 22, 0.7);
     }
 
-    .error-text {
-      font-size: 11px;
-      color: #fecaca;
-      padding: 6px 10px 8px;
-    }
-
-    .helper-text {
-      font-size: 11px;
-      color: var(--text-muted);
-      padding: 3px 2px 0;
-    }
-
-    .range-controls {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      margin-bottom: 8px;
-      flex-wrap: wrap;
-    }
-
-    .range-controls label {
-      font-size: 11px;
-      color: var(--text-muted);
-    }
-
-    .range-controls input[type="date"] {
-      background: rgba(15, 23, 42, 0.96);
-      border: 1px solid rgba(148, 163, 184, 0.35);
+    .tag {
+      display: inline-block;
+      padding: 3px 7px;
       border-radius: 999px;
-      padding: 4px 9px;
-      color: var(--text);
-      font-size: 11px;
+      border: 1px solid var(--border-subtle);
+      font-size: 0.7rem;
+      color: var(--muted);
     }
 
-    .footer {
-      margin-top: 24px;
-      padding-top: 10px;
-      border-top: 1px solid rgba(31, 41, 55, 0.9);
+    .error {
+      margin-top: 8px;
+      font-size: 0.8rem;
+      color: #fecaca;
+      background: var(--danger-soft);
+      border-radius: 10px;
+      padding: 8px 10px;
+    }
+
+    .ok {
+      margin-top: 8px;
+      font-size: 0.8rem;
+      color: #bbf7d0;
+      background: var(--accent-soft);
+      border-radius: 10px;
+      padding: 8px 10px;
+    }
+
+    .range-grid {
+      display: grid;
+      grid-template-columns: 2.1fr 1.3fr;
+      gap: 18px;
+      margin-bottom: 18px;
+    }
+
+    .range-filters {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: flex-end;
+      margin: 10px 0 8px;
+    }
+
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      font-size: 0.8rem;
+      color: var(--muted);
+    }
+
+    .field input {
+      padding: 7px 9px;
+      border-radius: 999px;
+      border: 1px solid var(--border-subtle);
+      background: rgba(15, 23, 42, 0.9);
+      color: var(--text);
+      font-size: 0.8rem;
+    }
+
+    .field input:focus {
+      outline: none;
+      border-color: rgba(96, 165, 250, 0.8);
+    }
+
+    .attendance-grid {
+      display: grid;
+      grid-template-columns: 1.4fr 2fr;
+      gap: 18px;
+      margin-bottom: 18px;
+    }
+
+    .mini-stats {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .mini-stat {
+      padding: 8px 10px;
+      border-radius: 12px;
+      background: rgba(15, 23, 42, 0.9);
+      border: 1px solid var(--border-subtle);
+      font-size: 0.78rem;
+    }
+
+    footer {
+      margin-top: 20px;
+      padding-top: 14px;
+      border-top: 1px solid rgba(30, 64, 175, 0.45);
+      font-size: 0.78rem;
+      color: var(--muted);
       display: flex;
       justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .ai-chip {
+      display: inline-flex;
       align-items: center;
-      font-size: 11px;
-      color: var(--text-muted);
-    }
-
-    .footer span strong {
-      color: #e5e7eb;
-    }
-
-    .footer-badge {
-      border-radius: 999px;
-      border: 1px solid rgba(148, 163, 184, 0.4);
+      gap: 6px;
       padding: 4px 10px;
-      background: rgba(15, 23, 42, 0.96);
+      border-radius: 999px;
+      background: var(--info-soft);
+      border: 1px solid rgba(96, 165, 250, 0.7);
+      font-size: 0.72rem;
+      color: #bfdbfe;
     }
 
-    @media (max-width: 900px) {
-      .row {
-        grid-template-columns: minmax(0, 1fr);
+    .ai-chip span.dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 999px;
+      background: #60a5fa;
+      box-shadow: 0 0 10px rgba(96, 165, 250, 0.8);
+    }
+
+    /* AI assignment section */
+    .assign-grid {
+      display: grid;
+      grid-template-columns: 1.4fr 2fr;
+      gap: 18px;
+    }
+
+    .assign-shift-summary {
+      font-size: 0.84rem;
+      color: var(--muted);
+      margin-top: 6px;
+    }
+
+    .assign-list {
+      margin-top: 10px;
+      max-height: 260px;
+      overflow-y: auto;
+      border-radius: 14px;
+      border: 1px solid var(--border-subtle);
+      background: rgba(15, 23, 42, 0.9);
+      padding: 8px 10px;
+    }
+
+    .assign-item {
+      padding: 8px 6px;
+      border-bottom: 1px solid rgba(51, 65, 85, 0.85);
+      font-size: 0.8rem;
+    }
+
+    .assign-item:last-child {
+      border-bottom: none;
+    }
+
+    .assign-name-line {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 6px;
+    }
+
+    .assign-name {
+      font-weight: 500;
+      color: var(--text);
+    }
+
+    .assign-score {
+      font-size: 0.78rem;
+      color: #bfdbfe;
+    }
+
+    .assign-meta {
+      margin-top: 3px;
+      font-size: 0.76rem;
+      color: var(--muted);
+    }
+
+    .assign-reasons {
+      margin-top: 3px;
+      font-size: 0.76rem;
+      color: #c4b5fd;
+    }
+
+    @media (max-width: 960px) {
+      .cards-grid,
+      .range-grid,
+      .attendance-grid,
+      .assign-grid {
+        grid-template-columns: 1fr;
       }
-      header {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 10px;
-      }
-      .top-controls {
-        align-self: stretch;
-        justify-content: space-between;
+
+      body {
+        padding: 16px;
       }
     }
   </style>
 </head>
 <body>
-  <div class="app-shell">
+  <div class="page">
     <header>
-      <div class="brand">
-        <div class="brand-row">
-          <div class="brand-dot"></div>
-          <span>PRIORY SMARTSHIFT</span>
-        </div>
-        <div class="brand-sub">Live staffing, WhatsApp check-ins & AI insight</div>
+      <div class="title-block">
+        <h1>Priory SmartShift</h1>
+        <p>Live staffing, WhatsApp check-ins &amp; AI insight</p>
       </div>
-      <div class="top-controls">
-        <div class="chip" id="managerStatusChip">
-          <div class="chip-dot"></div>
-          <span>Manager not logged in</span>
+      <div style="display:flex; align-items:center; gap:10px;">
+        <div id="login-status" class="badge" style="display:none;">
+          <span class="dot"></span>
+          <span>Demo manager logged in</span>
         </div>
-        <button id="demoLoginBtn" class="btn" type="button">
+        <button id="demo-login-btn" class="primary">
           <span>Login as demo manager</span>
         </button>
       </div>
     </header>
 
-    <main>
-      <div class="row">
-        <!-- TODAY CARD -->
-        <section class="card">
-          <div class="card-inner">
-            <div class="card-header">
-              <div>
-                <div class="card-title">Today</div>
-                <div class="card-subtitle" id="todayDateLabel">
-                  Live view of today's rota
-                </div>
-              </div>
-              <div class="card-header-right">
-                <div class="pill">
-                  <span style="width:7px;height:7px;border-radius:999px;background:#22c55e;box-shadow:0 0 10px rgba(34,197,94,0.75);"></span>
-                  <span>Live refresh</span>
-                </div>
-              </div>
-            </div>
+    <!-- TODAY + AI INSIGHT -->
+    <div class="cards-grid">
+      <!-- Today live rota -->
+      <section class="card">
+        <h2>TODAY</h2>
+        <p class="card-subtitle">Live view of today’s rota</p>
 
-            <div class="metrics-row">
-              <div class="metric">
-                <div class="metric-label">Shifts required</div>
-                <div class="metric-value" id="todayShiftsRequired">–</div>
-                <div class="metric-caption">All wards</div>
-              </div>
-              <div class="metric">
-                <div class="metric-label">Shifts filled</div>
-                <div class="metric-value" id="todayShiftsFilled">–</div>
-                <div class="metric-caption">Confirmed staff</div>
-              </div>
-              <div class="metric">
-                <div class="metric-label">Open positions</div>
-                <div class="metric-value" id="todayShiftsOpen">–</div>
-                <div class="metric-caption">Still to cover</div>
-              </div>
-            </div>
-
-            <div class="metrics-row">
-              <div class="metric">
-                <div class="metric-label">Check-ins (today)</div>
-                <div class="metric-value" id="todayCheckinsTotal">–</div>
-                <div class="metric-caption">
-                  WhatsApp + other sources
-                </div>
-              </div>
-              <div class="metric">
-                <div class="metric-label">From WhatsApp</div>
-                <div class="metric-value" id="todayCheckinsWhatsApp">–</div>
-                <div class="metric-caption">SmartShift chatbot</div>
-              </div>
-              <div class="metric">
-                <div class="metric-label">Other sources</div>
-                <div class="metric-value" id="todayCheckinsOther">–</div>
-                <div class="metric-caption">Manual / HRIS</div>
-              </div>
-            </div>
-
-            <div class="table-container">
-              <table>
-                <thead>
-                  <tr>
-                    <th>Ward</th>
-                    <th>Role</th>
-                    <th>Time</th>
-                    <th>Status</th>
-                    <th>Req</th>
-                    <th>Filled</th>
-                  </tr>
-                </thead>
-                <tbody id="todayTableBody">
-                  <tr>
-                    <td colspan="6" style="padding:8px 10px;color:#9ca3af;">
-                      Loading today’s data…
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-
-            <div class="helper-text" id="todayHelperText">
-              Live fill for today’s rota. Check console if errors appear.
-            </div>
+        <div class="pill-row">
+          <div class="pill">
+            <span id="today-date-label">–</span>
           </div>
-        </section>
+        </div>
 
-        <!-- AI INSIGHT CARD -->
-        <section class="card">
-          <div class="card-inner">
-            <div class="card-header">
-              <div>
-                <div class="card-title">AI insight</div>
-                <div class="card-subtitle">
-                  Staffing & wellbeing signal
-                </div>
-              </div>
-              <div class="card-header-right">
-                <div class="badge">
-                  <div class="badge-dot"></div>
-                  <span>AI forecast</span>
-                </div>
-              </div>
-            </div>
-
-            <div class="metrics-row">
-              <div class="metric">
-                <div class="metric-label">AI summary</div>
-                <div class="ai-summary-text neutral" id="aiSummaryText">
-                  Loading…
-                </div>
-              </div>
-              <div class="metric">
-                <div class="metric-label">Forecast date</div>
-                <div class="metric-value" id="aiForecastDate">–</div>
-                <div class="metric-caption">
-                  Next rota / risk window
-                </div>
-              </div>
-              <div class="metric">
-                <div class="metric-label">Expected open shifts</div>
-                <div class="metric-value" id="aiExpectedOpen">–</div>
-                <div class="metric-caption">
-                  Predicted uncovered posts
-                </div>
-              </div>
-            </div>
-
-            <div class="ai-body" id="aiBodyText">
-              Fetching AI forecast…
-            </div>
+        <div class="stat-row">
+          <div class="stat">
+            <div class="stat-label">Shifts required</div>
+            <div id="today-required" class="stat-value">–</div>
           </div>
-        </section>
+          <div class="stat">
+            <div class="stat-label">Shifts filled</div>
+            <div id="today-filled" class="stat-value good">–</div>
+          </div>
+          <div class="stat">
+            <div class="stat-label">Open positions</div>
+            <div id="today-open" class="stat-value bad">–</div>
+          </div>
+        </div>
+
+        <div class="table-wrapper">
+          <table>
+            <thead>
+              <tr>
+                <th>Ward</th>
+                <th>Role</th>
+                <th>Time</th>
+                <th>Status</th>
+                <th>Req</th>
+                <th>Filled</th>
+              </tr>
+            </thead>
+            <tbody id="today-shifts-body">
+              <tr>
+                <td colspan="6">Loading today’s shifts…</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div id="today-error" class="error" style="display:none;"></div>
+      </section>
+
+      <!-- AI Insight -->
+      <section class="card">
+        <div style="display:flex; justify-content:space-between; align-items:center; gap:10px;">
+          <h2>AI Insight</h2>
+          <div class="ai-chip">
+            <span class="dot"></span>
+            <span>Staffing & wellbeing signal</span>
+          </div>
+        </div>
+
+        <h3>AI forecast</h3>
+        <p class="card-subtitle">High-level risk and open shift outlook.</p>
+
+        <div class="stat-row">
+          <div class="stat">
+            <div class="stat-label">AI summary</div>
+            <div id="ai-summary" class="stat-value">–</div>
+          </div>
+          <div class="stat">
+            <div class="stat-label">Forecast date</div>
+            <div id="ai-forecast-date" class="stat-value">–</div>
+          </div>
+          <div class="stat">
+            <div class="stat-label">Expected open shifts</div>
+            <div id="ai-expected-open" class="stat-value">–</div>
+          </div>
+        </div>
+
+        <div id="ai-extra-text" class="ok" style="margin-top:14px;">
+          Awaiting AI forecast…
+        </div>
+      </section>
+    </div>
+
+    <!-- DATE RANGE & WARD ANALYTICS -->
+    <section class="card">
+      <h2>DATE RANGE &amp; WARD ANALYTICS</h2>
+      <p class="card-subtitle">Shift fill, WhatsApp activity &amp; attendance</p>
+
+      <div class="range-filters">
+        <div class="field">
+          <label for="range-from">From</label>
+          <input type="date" id="range-from" />
+        </div>
+        <div class="field">
+          <label for="range-to">To</label>
+          <input type="date" id="range-to" />
+        </div>
+        <button id="range-apply-btn" class="secondary">
+          Apply range
+        </button>
       </div>
 
-      <!-- RANGE & ATTENDANCE CARD -->
-      <section class="card">
-        <div class="card-inner">
-          <div class="card-header">
-            <div>
-              <div class="card-title">Date range & ward analytics</div>
-              <div class="card-subtitle">
-                Shift fill, WhatsApp activity & attendance
-              </div>
-            </div>
-            <div class="card-header-right">
-              <span class="card-subtitle">Manager view · all wards</span>
-            </div>
-          </div>
-
-          <div class="range-controls">
-            <label>
-              From
-              <input type="date" id="rangeFrom" />
-            </label>
-            <label>
-              To
-              <input type="date" id="rangeTo" />
-            </label>
-            <button id="applyRangeBtn" class="btn-secondary btn" type="button">
-              <span>Apply range</span>
-            </button>
-            <span id="rangeStatusText" class="card-subtitle"></span>
-          </div>
-
-          <div class="table-container">
+      <div class="range-grid">
+        <div>
+          <h3>Shift fill by ward</h3>
+          <div class="table-wrapper">
             <table>
               <thead>
                 <tr>
@@ -643,515 +633,915 @@
                   <th>Filled</th>
                 </tr>
               </thead>
-              <tbody id="rangeShiftBody">
+              <tbody id="range-shifts-body">
                 <tr>
-                  <td colspan="6" style="padding:8px 10px;color:#9ca3af;">
-                    Select a date range then click “Apply range” to load shift fill.
-                  </td>
+                  <td colspan="6">Loading shifts for range…</td>
                 </tr>
               </tbody>
             </table>
           </div>
+          <div id="range-shifts-error" class="error" style="display:none;"></div>
+        </div>
 
-          <div class="metrics-row" style="margin-top: 10px;">
-            <div class="metric">
-              <div class="metric-label">Total check-ins (range)</div>
-              <div class="metric-value" id="rangeCheckinsTotal">–</div>
-              <div class="metric-caption">
-                WhatsApp + other sources
-              </div>
+        <div>
+          <h3>Check-in overview</h3>
+          <div class="mini-stats">
+            <div class="mini-stat">
+              <div class="stat-label">Total check-ins</div>
+              <div id="range-total-checkins" class="stat-value">–</div>
             </div>
-            <div class="metric">
-              <div class="metric-label">From WhatsApp</div>
-              <div class="metric-value" id="rangeCheckinsWhatsApp">–</div>
-              <div class="metric-caption">
-                SmartShift chatbot
-              </div>
+            <div class="mini-stat">
+              <div class="stat-label">From WhatsApp</div>
+              <div id="range-whatsapp" class="stat-value">–</div>
             </div>
-            <div class="metric">
-              <div class="metric-label">Other sources</div>
-              <div class="metric-value" id="rangeCheckinsOther">–</div>
-              <div class="metric-caption">
-                Manual / HRIS
-              </div>
+            <div class="mini-stat">
+              <div class="stat-label">Other sources</div>
+              <div id="range-other" class="stat-value">–</div>
             </div>
           </div>
 
-          <div class="table-container" style="margin-top: 10px;">
-            <table>
-              <thead>
-                <tr>
-                  <th>When</th>
-                  <th>Staff</th>
-                  <th>Action</th>
-                  <th>Source</th>
-                </tr>
-              </thead>
-              <tbody id="rangeAttendanceBody">
-                <tr>
-                  <td colspan="4" style="padding:8px 10px;color:#9ca3af;">
-                    Select a range to view attendance logs.
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-
-          <div class="helper-text" id="rangeHelperText">
-            Range analytics show how well shifts were covered and where WhatsApp
-            self-service is being used.
+          <h3 style="margin-top:16px;">Today – WhatsApp vs other</h3>
+          <div id="today-attendance-summary" class="mini-stat">
+            Loading today’s attendance…
           </div>
         </div>
+      </div>
+    </section>
+
+    <!-- ATTENDANCE TABLES -->
+    <div class="attendance-grid">
+      <section class="card">
+        <h2>Today’s attendance</h2>
+        <p class="card-subtitle">Real-time check-ins for current date.</p>
+
+        <div class="table-wrapper">
+          <table>
+            <thead>
+              <tr>
+                <th>When</th>
+                <th>Staff</th>
+                <th>Action</th>
+                <th>Source</th>
+              </tr>
+            </thead>
+            <tbody id="attendance-today-body">
+              <tr>
+                <td colspan="4">Loading today’s attendance…</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div id="attendance-today-error" class="error" style="display:none;"></div>
       </section>
 
-      <footer class="footer">
-        <span>
-          © <strong id="footerYear"></strong> Powered by
-          <strong>The Labour Prefect</strong>. Priory SmartShift demo environment.
-        </span>
-        <span class="footer-badge">
-          Staffing intelligence · WhatsApp check-ins · Rota optimisation
-        </span>
-      </footer>
-    </main>
+      <section class="card">
+        <h2>Attendance logs (selected range)</h2>
+        <p class="card-subtitle">Historical view of check-ins &amp; checkouts.</p>
+
+        <div class="table-wrapper">
+          <table>
+            <thead>
+              <tr>
+                <th>When</th>
+                <th>Staff</th>
+                <th>Action</th>
+                <th>Source</th>
+              </tr>
+            </thead>
+            <tbody id="attendance-range-body">
+              <tr>
+                <td colspan="4">Loading attendance logs…</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div id="attendance-range-error" class="error" style="display:none;"></div>
+      </section>
+    </div>
+
+    <!-- AI SHIFT ASSIGNMENT (EXPERIMENTAL) -->
+    <section class="card">
+      <div style="display:flex; justify-content:space-between; align-items:center; gap:10px;">
+        <h2>AI SHIFT ASSIGNMENT (EXPERIMENTAL)</h2>
+        <div class="ai-chip">
+          <span class="dot"></span>
+          <span>Ranking staff for a given shift</span>
+        </div>
+      </div>
+      <p class="card-subtitle">
+        Enter a shift ID from the rota to see AI-ranked staff recommendations based on
+        contracts, ward familiarity, preferences, and safety rules.
+      </p>
+
+      <div class="assign-grid">
+        <div>
+          <h3>Input</h3>
+          <div class="field">
+            <label for="assign-shift-id">Shift ID</label>
+            <input type="number" id="assign-shift-id" placeholder="e.g. 2" />
+          </div>
+          <div style="margin-top:10px; display:flex; gap:8px; align-items:center;">
+            <button id="assign-fetch-btn" class="secondary">
+              Get recommendations
+            </button>
+            <span style="font-size:0.78rem; color:var(--muted);">
+              Tip: you can see shift IDs in the API or database (demo only).
+            </span>
+          </div>
+
+          <div id="assign-error" class="error" style="display:none; margin-top:10px;"></div>
+          <div id="assign-ok" class="ok" style="display:none; margin-top:10px;"></div>
+
+          <div id="assign-shift-summary" class="assign-shift-summary"></div>
+        </div>
+
+        <div>
+          <h3>Top recommended staff</h3>
+          <div id="assign-top-list" class="assign-list">
+            <div style="font-size:0.8rem; color:var(--muted);">
+              No recommendations loaded yet. Enter a shift ID and click
+              <strong>Get recommendations</strong>.
+            </div>
+          </div>
+
+          <h3 style="margin-top:14px;">Full ranked list</h3>
+          <div id="assign-full-list" class="assign-list">
+            <div style="font-size:0.8rem; color:var(--muted);">
+              Full ranking will appear here once a shift is analysed.
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <footer>
+      <span>Priory SmartShift · Manager view</span>
+      <span>Powered by The Labour Prefect</span>
+    </footer>
   </div>
 
   <script>
-    // -------------------------------
-    // Small helpers
-    // -------------------------------
-    function setText(id, value) {
-      const el = document.getElementById(id);
-      if (el) el.textContent = value;
-    }
-
-    function formatDateFriendly(iso) {
-      if (!iso) return "–";
-      const d = new Date(iso);
-      return d.toLocaleDateString("en-GB", {
-        weekday: "short",
-        day: "2-digit",
-        month: "short",
-        year: "numeric",
-      });
-    }
-
-    function formatTimeLabel(start, end) {
-      if (!start || !end) return "–";
-      const s = String(start).slice(0, 5);
-      const e = String(end).slice(0, 5);
-      return s + "–" + e;
-    }
-
-    function todayISO() {
-      const d = new Date();
+    // ---------- BASIC HELPERS ----------
+    function formatDate(dateStr) {
+      if (!dateStr) return '–';
+      const d = new Date(dateStr);
+      if (isNaN(d.getTime())) return dateStr;
       return d.toISOString().slice(0, 10);
     }
 
-    function firstOfMonthISO() {
-      const d = new Date();
-      d.setDate(1);
-      return d.toISOString().slice(0, 10);
+    function formatTimeRange(row) {
+      const start = row.start_time || row.start || row.from || row.startTime;
+      const end = row.end_time || row.end || row.to || row.endTime;
+      if (!start && !end) return '–';
+      const s = start ? start.toString().slice(11, 16) : '–';
+      const e = end ? end.toString().slice(11, 16) : '–';
+      return s + '–' + e;
     }
 
-    // -------------------------------
-    // Auth & fetch wrapper
-    // -------------------------------
-    async function demoLogin(force) {
-      const statusChip = document.getElementById("managerStatusChip");
-      const btn = document.getElementById("demoLoginBtn");
-
-      if (!force) {
-        const existing = localStorage.getItem("managerToken");
-        if (existing) {
-          if (statusChip) {
-            statusChip.querySelector("span").textContent = "Demo manager logged in";
-          }
-          if (btn) {
-            btn.textContent = "Demo manager logged in";
-            btn.disabled = true;
-          }
-          return existing;
-        }
-      }
-
-      try {
-        const res = await fetch("/api/auth/demo-manager-login", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-        });
-        if (!res.ok) {
-          throw new Error("Demo login failed: " + res.status);
-        }
-        const data = await res.json();
-        localStorage.setItem("managerToken", data.token || "");
-        if (statusChip) {
-          statusChip.querySelector("span").textContent = "Demo manager logged in";
-        }
-        if (btn) {
-          btn.textContent = "Demo manager logged in";
-          btn.disabled = true;
-        }
-        return data.token;
-      } catch (err) {
-        console.error("[AUTH] Demo login error:", err);
-        if (statusChip) {
-          statusChip.querySelector("span").textContent =
-            "Error logging in – see console";
-        }
-        throw err;
-      }
+    // Unwrap common API response shapes
+    function unwrapData(raw) {
+      if (!raw) return {};
+      if (raw.data && typeof raw.data === 'object') return raw.data;
+      return raw;
     }
 
-    async function fetchWithAuth(path, options = {}) {
-      const token = localStorage.getItem("managerToken");
+    function extractRows(raw) {
+      const data = unwrapData(raw);
+      return (
+        data.rows ||
+        data.records ||
+        data.shifts ||
+        data.logs ||
+        data.items ||
+        []
+      );
+    }
+
+    // GET with Authorization header using JWT stored in localStorage
+    async function apiGet(url) {
+      const token = localStorage.getItem('jwtToken');
       if (!token) {
-        throw new Error("No manager token in localStorage");
+        console.warn('No JWT token found in localStorage');
+        throw new Error('MISSING_TOKEN');
       }
-      const res = await fetch(path, {
-        ...options,
+
+      const res = await fetch(url, {
         headers: {
-          ...(options.headers || {}),
-          Authorization: "Bearer " + token,
-        },
+          'Authorization': 'Bearer ' + token
+        }
       });
+
       if (!res.ok) {
-        const text = await res.text();
-        console.error("[API] Request failed", path, res.status, text);
-        throw new Error("Request failed " + res.status);
+        let msg = 'HTTP ' + res.status;
+        try {
+          const errBody = await res.json();
+          console.warn('API error body for', url, errBody);
+          if (errBody && errBody.error) msg += ' – ' + errBody.error;
+        } catch (_) {}
+        throw new Error(msg);
       }
-      return res.json();
+
+      const json = await res.json();
+      console.log('API GET', url, '->', json);
+      return json;
     }
 
-    // -------------------------------
-    // Load TODAY summary
-    // -------------------------------
-    async function loadTodaySummary() {
-      setText("todayHelperText", "Loading today’s data…");
-      setText("todayShiftsRequired", "–");
-      setText("todayShiftsFilled", "–");
-      setText("todayShiftsOpen", "–");
+    // ---------- GLOBAL CACHES FOR "AI" ----------
+    let aiTodayShiftsRows = null;
+    let aiRangeShiftsRows = null;
+    let aiRangeAttendanceRows = null;
 
+    // ---------- LOGIN HANDLING ----------
+    function setLoggedInUI(isLoggedIn) {
+      const badge = document.getElementById('login-status');
+      const btn = document.getElementById('demo-login-btn');
+
+      if (isLoggedIn) {
+        if (badge) badge.style.display = 'inline-flex';
+        if (btn) btn.style.display = 'none';
+      } else {
+        if (badge) badge.style.display = 'none';
+        if (btn) btn.style.display = 'inline-flex';
+      }
+    }
+
+    async function handleDemoLogin() {
       try {
-        const data = await fetchWithAuth("/api/manager/shifts/summary/today");
-        console.log("[DASHBOARD] Today summary:", data);
+        const res = await fetch('/api/debug/test-token');
+        const data = await res.json();
 
-        const items = data.items || [];
-        let required = 0;
-        let filled = 0;
+        console.log('/api/debug/test-token ->', data);
 
-        for (const row of items) {
-          required += Number(row.number_required || 0);
-          filled += Number(row.number_filled || 0);
+        if (!data || !data.token) {
+          alert('Could not obtain demo token from /api/debug/test-token');
+          return;
         }
 
-        const open = Math.max(required - filled, 0);
+        localStorage.setItem('jwtToken', data.token);
+        setLoggedInUI(true);
 
-        setText("todayShiftsRequired", required || "0");
-        setText("todayShiftsFilled", filled || "0");
-        setText("todayShiftsOpen", open || "0");
+        await loadAllDashboardData();
+      } catch (err) {
+        console.error(err);
+        alert('Error while logging in as demo manager');
+      }
+    }
 
-        const tbody = document.getElementById("todayTableBody");
-        if (!tbody) return;
+    // ---------- TODAY SHIFTS ----------
+    async function loadTodayShiftsAndStats() {
+      const tbody = document.getElementById('today-shifts-body');
+      const errBox = document.getElementById('today-error');
+      const dateLabel = document.getElementById('today-date-label');
+      const reqEl = document.getElementById('today-required');
+      const filledEl = document.getElementById('today-filled');
+      const openEl = document.getElementById('today-open');
 
-        if (!items.length) {
-          tbody.innerHTML =
-            '<tr><td colspan="6" style="padding:8px 10px;color:#9ca3af;">No shifts found for today.</td></tr>';
-        } else {
-          tbody.innerHTML = "";
-          for (const row of items) {
-            const tr = document.createElement("tr");
+      if (errBox) errBox.style.display = 'none';
 
-            const status = String(row.status || "").toLowerCase();
-            let statusClass = "status-open";
-            let statusLabel = status || "open";
-            if (status === "filled") statusClass = "status-filled";
-            if (status === "partial" || status === "part") {
-              statusClass = "status-part";
-              statusLabel = "partial";
-            }
+      try {
+        const raw = await apiGet('/api/manager/shifts/summary/today');
+        console.log('Today shifts raw ->', raw);
 
-            tr.innerHTML = `
-              <td>${row.ward || "-"}</td>
-              <td>${row.role_required || "-"}</td>
-              <td>${formatTimeLabel(row.start_time, row.end_time)}</td>
-              <td>
-                <span class="status-pill ${statusClass}">
-                  ${statusLabel}
-                </span>
-              </td>
-              <td>${row.number_required ?? "-"}</td>
-              <td>${row.number_filled ?? "-"}</td>
-            `;
+        const rows = extractRows(raw);
+        aiTodayShiftsRows = rows;
+
+        const unwrapped = unwrapData(raw);
+        const summary =
+          unwrapped.summary || raw.summary || unwrapped.totals || raw.totals || {};
+
+        if (dateLabel) {
+          const dateVal =
+            raw.date || unwrapped.date || new Date().toISOString();
+          dateLabel.textContent = formatDate(dateVal);
+        }
+
+        let totalRequired = summary.total_required;
+        let totalFilled = summary.total_filled;
+        let totalOpen = summary.total_open;
+
+        if (typeof totalRequired === 'undefined') {
+          totalRequired = 0;
+          totalFilled = 0;
+          rows.forEach(r => {
+            const req = r.required || r.required_count || r.number_required || r.req || 0;
+            const filled = r.filled || r.filled_count || r.number_filled || 0;
+            totalRequired += req;
+            totalFilled += filled;
+          });
+          totalOpen = totalRequired - totalFilled;
+        }
+
+        if (reqEl) reqEl.textContent = totalRequired ?? 0;
+        if (filledEl) filledEl.textContent = totalFilled ?? 0;
+        if (openEl) openEl.textContent = totalOpen ?? 0;
+
+        if (tbody) {
+          tbody.innerHTML = '';
+          if (!rows.length) {
+            const tr = document.createElement('tr');
+            tr.innerHTML = '<td colspan="6">No shifts found for today.</td>';
             tbody.appendChild(tr);
+          } else {
+            rows.forEach(r => {
+              const tr = document.createElement('tr');
+
+              const ward = r.ward_name || r.ward || r.wardId || '–';
+              const role = r.role_required || r.role_name || r.role || '–';
+              const statusRaw =
+                r.status ||
+                r.fill_status ||
+                (r.number_filled >= r.number_required ? 'filled' : (r.number_filled > 0 ? 'partial' : 'open'));
+              const required = r.required || r.required_count || r.number_required || r.req || 0;
+              const filled = r.filled || r.filled_count || r.number_filled || 0;
+
+              let statusClass = 'status-open';
+              let statusLabel = 'OPEN';
+
+              const status = (statusRaw || '').toString().toLowerCase();
+              if (status === 'filled') {
+                statusClass = 'status-filled';
+                statusLabel = 'FILLED';
+              } else if (status === 'partial' || status === 'part') {
+                statusClass = 'status-part';
+                statusLabel = 'PARTIAL';
+              }
+
+              tr.innerHTML = `
+                <td>${ward}</td>
+                <td>${role}</td>
+                <td>${formatTimeRange(r)}</td>
+                <td><span class="status-pill ${statusClass}">${statusLabel}</span></td>
+                <td>${required}</td>
+                <td>${filled}</td>
+              `;
+              tbody.appendChild(tr);
+            });
+          }
+        }
+      } catch (err) {
+        console.error('Error loading today shifts', err);
+        if (errBox) {
+          if (err.message === 'MISSING_TOKEN') {
+            errBox.textContent = 'Please click "Login as demo manager" to load today’s shifts.';
+          } else {
+            errBox.textContent = 'Failed to load today’s shifts: ' + err.message;
+          }
+          errBox.style.display = 'block';
+        }
+      }
+    }
+
+    // ---------- ATTENDANCE (TODAY & RANGE) ----------
+    async function loadTodayAttendance() {
+      const tbody = document.getElementById('attendance-today-body');
+      const errBox = document.getElementById('attendance-today-error');
+      const todaySummary = document.getElementById('today-attendance-summary');
+      if (errBox) errBox.style.display = 'none';
+
+      try {
+        const raw = await apiGet('/api/manager/attendance/today');
+        console.log('Today attendance raw ->', raw);
+
+        const rows = extractRows(raw);
+
+        if (tbody) {
+          tbody.innerHTML = '';
+          if (!rows.length) {
+            const tr = document.createElement('tr');
+            tr.innerHTML = '<td colspan="4">No attendance logs for today yet.</td>';
+            tbody.appendChild(tr);
+          } else {
+            rows.forEach(r => {
+              const tr = document.createElement('tr');
+              const when =
+                r.occurred_at ||
+                r.created_at ||
+                r.timestamp ||
+                r.time ||
+                new Date().toISOString();
+
+              const staff =
+                r.staff_name || r.staff || r.user_name || r.user || '–';
+
+              const action =
+                r.action || r.type || 'checkin';
+
+              const source =
+                r.source || r.channel || 'unknown';
+
+              tr.innerHTML = `
+                <td>${formatDate(when)} ${when.toString().slice(11, 16)}</td>
+                <td>${staff}</td>
+                <td>${action}</td>
+                <td>${source}</td>
+              `;
+              tbody.appendChild(tr);
+            });
           }
         }
 
-        setText(
-          "todayHelperText",
-          "Live view of today’s rota. Data shown for organisation " +
-            (data.organisation_id ?? "–") +
-            "."
-        );
+        if (todaySummary) {
+          let whatsappCount = 0;
+          let otherCount = 0;
+          rows.forEach(r => {
+            const source =
+              (r.source || r.channel || '').toString().toLowerCase();
+            if (source.includes('whatsapp')) {
+              whatsappCount++;
+            } else {
+              otherCount++;
+            }
+          });
+          const total = rows.length;
+          todaySummary.innerHTML = `
+            <div class="stat-label">Today’s check-ins</div>
+            <div class="stat-value">${total}</div>
+            <div style="font-size:0.78rem; color:var(--muted); margin-top:4px;">
+              WhatsApp: ${whatsappCount} · Other: ${otherCount}
+            </div>
+          `;
+        }
       } catch (err) {
-        console.error("[DASHBOARD] Error loading today summary:", err);
-        setText(
-          "todayHelperText",
-          "Error loading today’s data. See console for details."
-        );
-        const tbody = document.getElementById("todayTableBody");
+        console.error('Error loading today attendance', err);
+        if (errBox) {
+          if (err.message === 'MISSING_TOKEN') {
+            errBox.textContent = 'Please click "Login as demo manager" to load today’s attendance.';
+          } else {
+            errBox.textContent =
+              'Failed to load today’s attendance: ' + err.message;
+          }
+          errBox.style.display = 'block';
+        }
+      }
+    }
+
+    async function loadRangeAttendance(from, to) {
+      const tbody = document.getElementById('attendance-range-body');
+      const errBox = document.getElementById('attendance-range-error');
+      if (errBox) errBox.style.display = 'none';
+
+      try {
+        const url =
+          '/api/manager/attendance/range?from=' +
+          encodeURIComponent(from) +
+          '&to=' +
+          encodeURIComponent(to);
+
+        const raw = await apiGet(url);
+        console.log('Range attendance raw ->', raw);
+
+        const rows = extractRows(raw);
+        aiRangeAttendanceRows = rows;
+
         if (tbody) {
-          tbody.innerHTML =
-            '<tr><td colspan="6" class="error-text">Error loading today’s shift data. Check browser console for details.</td></tr>';
+          tbody.innerHTML = '';
+          if (!rows.length) {
+            const tr = document.createElement('tr');
+            tr.innerHTML = '<td colspan="4">No attendance in this range.</td>';
+            tbody.appendChild(tr);
+          } else {
+            rows.forEach(r => {
+              const tr = document.createElement('tr');
+              const when =
+                r.occurred_at ||
+                r.created_at ||
+                r.timestamp ||
+                r.time ||
+                new Date().toISOString();
+
+              const staff =
+                r.staff_name || r.staff || r.user_name || r.user || '–';
+
+              const action =
+                r.action || r.type || 'checkin';
+
+              const source =
+                r.source || r.channel || 'unknown';
+
+              tr.innerHTML = `
+                <td>${formatDate(when)} ${when.toString().slice(11, 16)}</td>
+                <td>${staff}</td>
+                <td>${action}</td>
+                <td>${source}</td>
+              `;
+              tbody.appendChild(tr);
+            });
+          }
+        }
+      } catch (err) {
+        console.error('Error loading range attendance', err);
+        if (errBox) {
+          if (err.message === 'MISSING_TOKEN') {
+            errBox.textContent = 'Please click "Login as demo manager" then re-apply the date range.';
+          } else {
+            errBox.textContent =
+              'Failed to load attendance for range: ' + err.message;
+          }
+          errBox.style.display = 'block';
         }
       }
     }
 
-    // -------------------------------
-    // Load TODAY attendance
-    // -------------------------------
-    async function loadTodayAttendance() {
-      try {
-        const data = await fetchWithAuth("/api/manager/attendance/today");
-        console.log("[DASHBOARD] Today attendance:", data);
+    // ---------- RANGE SHIFTS + CHECK-IN OVERVIEW ----------
+    async function loadRangeShiftsAndOverview(from, to) {
+      const tbody = document.getElementById('range-shifts-body');
+      const errBox = document.getElementById('range-shifts-error');
+      const totalEl = document.getElementById('range-total-checkins');
+      const waEl = document.getElementById('range-whatsapp');
+      const otherEl = document.getElementById('range-other');
 
-        const items = data.items || [];
-        const total = items.length;
-        const fromWhatsApp = items.filter(
-          (x) => String(x.source || "").toLowerCase() === "whatsapp"
-        ).length;
-        const other = total - fromWhatsApp;
-
-        setText("todayCheckinsTotal", total || "0");
-        setText("todayCheckinsWhatsApp", fromWhatsApp || "0");
-        setText("todayCheckinsOther", other || "0");
-      } catch (err) {
-        console.error("[DASHBOARD] Error loading today attendance:", err);
-        setText("todayCheckinsTotal", "–");
-        setText("todayCheckinsWhatsApp", "–");
-        setText("todayCheckinsOther", "–");
-      }
-    }
-
-    // -------------------------------
-    // Load AI INSIGHT
-    // -------------------------------
-    async function loadAiInsight() {
-      setText("aiSummaryText", "Loading…");
-      setText("aiForecastDate", "–");
-      setText("aiExpectedOpen", "–");
-      document.getElementById("aiBodyText").textContent =
-        "Fetching AI forecast…";
+      if (errBox) errBox.style.display = 'none';
 
       try {
-        const data = await fetchWithAuth("/api/test/ai/insight");
-        console.log("[DASHBOARD] AI insight:", data);
+        const shiftUrl =
+          '/api/manager/shifts/summary/range?from=' +
+          encodeURIComponent(from) +
+          '&to=' +
+          encodeURIComponent(to);
 
-        const summary = (data.summary || "neutral").toLowerCase();
-        const details = data.details || {};
-        const forecastDate = details.forecast_date || todayISO();
-        const expectedOpen = details.expected_open_shifts ?? "0";
+        const shiftRaw = await apiGet(shiftUrl);
+        console.log('Range shifts raw ->', shiftRaw);
 
-        const summaryEl = document.getElementById("aiSummaryText");
-        summaryEl.textContent = summary;
-        summaryEl.classList.remove("neutral", "warning", "risk");
-        if (summary === "neutral") summaryEl.classList.add("neutral");
-        else if (summary === "warning") summaryEl.classList.add("warning");
-        else summaryEl.classList.add("risk");
+        const rows = extractRows(shiftRaw);
+        aiRangeShiftsRows = rows;
 
-        setText("aiForecastDate", formatDateFriendly(forecastDate));
-        setText("aiExpectedOpen", expectedOpen);
+        if (tbody) {
+          tbody.innerHTML = '';
+          if (!rows.length) {
+            const tr = document.createElement('tr');
+            tr.innerHTML = '<td colspan="6">No shifts found in this range.</td>';
+            tbody.appendChild(tr);
+          } else {
+            rows.forEach(r => {
+              const tr = document.createElement('tr');
+              const date = r.shift_date || r.date || r.day || new Date().toISOString();
+              const ward = r.ward || r.ward_name || '–';
+              const role = r.role_required || r.role_name || r.role || '–';
+              const statusRaw =
+                r.status ||
+                r.fill_status ||
+                (r.number_filled >= r.number_required ? 'filled' : (r.number_filled > 0 ? 'partial' : 'open'));
+              const required = r.required || r.required_count || r.number_required || r.req || 0;
+              const filled = r.filled || r.filled_count || r.number_filled || 0;
 
-        const burnoutAlerts = details.burnout_alerts || [];
-        const aiBody = document.getElementById("aiBodyText");
-        if (!burnoutAlerts.length) {
-          aiBody.textContent =
-            "No current burnout alerts flagged. Keep monitoring staffing balance across wards.";
-        } else {
-          const wards = burnoutAlerts.map((b) => b.ward || "Unknown").join(", ");
-          aiBody.textContent =
-            "Burnout risk flagged in: " +
-            wards +
-            ". Consider reallocating staff or reducing back-to-back long days.";
+              let statusClass = 'status-open';
+              let statusLabel = 'OPEN';
+              const status = (statusRaw || '').toString().toLowerCase();
+              if (status === 'filled') {
+                statusClass = 'status-filled';
+                statusLabel = 'FILLED';
+              } else if (status === 'partial' || status === 'part') {
+                statusClass = 'status-part';
+                statusLabel = 'PARTIAL';
+              }
+
+              tr.innerHTML = `
+                <td>${formatDate(date)}</td>
+                <td>${ward}</td>
+                <td>${role}</td>
+                <td><span class="status-pill ${statusClass}">${statusLabel}</span></td>
+                <td>${required}</td>
+                <td>${filled}</td>
+              `;
+              tbody.appendChild(tr);
+            });
+          }
         }
+
+        const attUrl =
+          '/api/manager/attendance/range?from=' +
+          encodeURIComponent(from) +
+          '&to=' +
+          encodeURIComponent(to);
+        const attRaw = await apiGet(attUrl);
+        console.log('Range attendance overview raw ->', attRaw);
+
+        const logs = extractRows(attRaw);
+        aiRangeAttendanceRows = logs;
+
+        let whatsappCount = 0;
+        let otherCount = 0;
+        logs.forEach(r => {
+          const source = (r.source || r.channel || '').toString().toLowerCase();
+          if (source.includes('whatsapp')) {
+            whatsappCount++;
+          } else {
+            otherCount++;
+          }
+        });
+        const total = logs.length;
+
+        if (totalEl) totalEl.textContent = total;
+        if (waEl) waEl.textContent = whatsappCount;
+        if (otherEl) otherEl.textContent = otherCount;
       } catch (err) {
-        console.error("[DASHBOARD] Error loading AI insight:", err);
-        const aiBody = document.getElementById("aiBodyText");
-        aiBody.textContent =
-          "Unable to load AI forecast right now. Please check your connection or try again later.";
-        setText("aiSummaryText", "error");
+        console.error('Error loading range data', err);
+        if (errBox) {
+          if (err.message === 'MISSING_TOKEN') {
+            errBox.textContent = 'Please click "Login as demo manager" then re-apply the date range.';
+          } else {
+            errBox.textContent =
+              'Failed to load shift/attendance overview: ' + err.message;
+          }
+          errBox.style.display = 'block';
+        }
       }
     }
 
-    // -------------------------------
-    // Range analytics (shifts + attendance)
-    // -------------------------------
-    async function loadRangeAnalytics() {
-      const fromInput = document.getElementById("rangeFrom");
-      const toInput = document.getElementById("rangeTo");
-      const from = fromInput.value;
-      const to = toInput.value;
-      const statusEl = document.getElementById("rangeStatusText");
+    // ---------- AI INSIGHT (COMPUTED ON FRONT-END) ----------
+    function loadInsightToday() {
+      const summaryEl = document.getElementById('ai-summary');
+      const dateEl = document.getElementById('ai-forecast-date');
+      const openEl = document.getElementById('ai-expected-open');
+      const extraEl = document.getElementById('ai-extra-text');
 
-      if (!from || !to) {
-        statusEl.textContent = "Please choose both a start and end date.";
+      if (extraEl) extraEl.textContent = 'Computing AI forecast…';
+
+      if (!aiTodayShiftsRows || !aiRangeShiftsRows) {
+        if (summaryEl) summaryEl.textContent = 'No data yet';
+        if (dateEl) dateEl.textContent = '–';
+        if (openEl) openEl.textContent = '–';
+        if (extraEl) extraEl.textContent = 'Waiting for shift & attendance data…';
         return;
       }
 
-      statusEl.textContent = "Loading range analytics…";
+      const todayStr = new Date().toISOString().slice(0, 10);
 
-      const shiftBody = document.getElementById("rangeShiftBody");
-      const attBody = document.getElementById("rangeAttendanceBody");
-      shiftBody.innerHTML =
-        '<tr><td colspan="6" style="padding:8px 10px;color:#9ca3af;">Loading shift data…</td></tr>';
-      attBody.innerHTML =
-        '<tr><td colspan="4" style="padding:8px 10px;color:#9ca3af;">Loading attendance data…</td></tr>';
+      let todayOpenShortfall = 0;
+      let overallOpenShortfall = 0;
+      let latestDate = null;
+      const wardOpenMap = {};
 
-      try {
-        const [shiftData, attData] = await Promise.all([
-          fetchWithAuth(
-            `/api/manager/shifts/summary/range?from=${from}&to=${to}`
-          ),
-          fetchWithAuth(
-            `/api/manager/attendance/range?from=${from}&to=${to}`
-          ),
-        ]);
+      const allShifts = [...aiRangeShiftsRows];
+      aiTodayShiftsRows.forEach(r => allShifts.push(r));
 
-        console.log("[DASHBOARD] Range shifts:", shiftData);
-        console.log("[DASHBOARD] Range attendance:", attData);
+      allShifts.forEach(r => {
+        const dateVal = formatDate(r.shift_date || r.date || todayStr);
+        const status = (r.status || '').toString().toLowerCase();
+        const req = r.number_required || r.required || r.required_count || r.req || 0;
+        const filled = r.number_filled || r.filled || r.filled_count || 0;
+        const shortfall = Math.max(req - filled, 0);
 
-        const shiftItems = shiftData.items || [];
-        if (!shiftItems.length) {
-          shiftBody.innerHTML =
-            '<tr><td colspan="6" style="padding:8px 10px;color:#9ca3af;">No shifts found in this range.</td></tr>';
-        } else {
-          shiftBody.innerHTML = "";
-          for (const row of shiftItems) {
-            const tr = document.createElement("tr");
-            const status = String(row.status || "").toLowerCase();
-            let statusClass = "status-open";
-            let statusLabel = status || "open";
-            if (status === "filled") statusClass = "status-filled";
-            if (status === "partial" || status === "part") {
-              statusClass = "status-part";
-              statusLabel = "partial";
-            }
-
-            tr.innerHTML = `
-              <td>${formatDateFriendly(row.shift_date)}</td>
-              <td>${row.ward || "-"}</td>
-              <td>${row.role_required || "-"}</td>
-              <td>
-                <span class="status-pill ${statusClass}">
-                  ${statusLabel}
-                </span>
-              </td>
-              <td>${row.number_required ?? "-"}</td>
-              <td>${row.number_filled ?? "-"}</td>
-            `;
-            shiftBody.appendChild(tr);
-          }
+        if (!latestDate || dateVal > latestDate) {
+          latestDate = dateVal;
         }
 
-        const attItems = attData.items || [];
-        if (!attItems.length) {
-          attBody.innerHTML =
-            '<tr><td colspan="4" style="padding:8px 10px;color:#9ca3af;">No attendance logs in this range.</td></tr>';
-        } else {
-          attBody.innerHTML = "";
-          for (const row of attItems) {
-            const tr = document.createElement("tr");
-            tr.innerHTML = `
-              <td>${new Date(row.occurred_at).toLocaleString("en-GB", {
-                weekday: "short",
-                day: "2-digit",
-                month: "short",
-                hour: "2-digit",
-                minute: "2-digit",
-              })}</td>
-              <td>${row.staff_name || "Unknown staff"}</td>
-              <td>${row.action || "-"}</td>
-              <td>${row.source || "-"}</td>
-            `;
-            attBody.appendChild(tr);
+        if (status === 'open' || shortfall > 0) {
+          overallOpenShortfall += shortfall;
+          if (dateVal === todayStr) {
+            todayOpenShortfall += shortfall;
           }
+          const ward = r.ward || r.ward_name || 'Unknown ward';
+          wardOpenMap[ward] = (wardOpenMap[ward] || 0) + shortfall;
         }
+      });
 
-        const totalAtt = attItems.length;
-        const fromWhatsApp = attItems.filter(
-          (x) => String(x.source || "").toLowerCase() === "whatsapp"
-        ).length;
-        const other = totalAtt - fromWhatsApp;
+      let summaryText;
+      if (overallOpenShortfall === 0) {
+        summaryText = 'stable – no open shifts detected in range';
+      } else if (overallOpenShortfall <= 3) {
+        summaryText = 'caution – low level of open shifts';
+      } else {
+        summaryText = 'warning – significant open shift pressure';
+      }
 
-        setText("rangeCheckinsTotal", totalAtt || "0");
-        setText("rangeCheckinsWhatsApp", fromWhatsApp || "0");
-        setText("rangeCheckinsOther", other || "0");
+      if (summaryEl) summaryEl.textContent = summaryText;
+      if (dateEl) dateEl.textContent = latestDate || '–';
+      if (openEl) openEl.textContent = overallOpenShortfall;
 
-        statusEl.textContent =
-          "Showing " +
-          shiftItems.length +
-          " shift(s) and " +
-          totalAtt +
-          " attendance log(s) for the selected range.";
-      } catch (err) {
-        console.error("[DASHBOARD] Error loading range analytics:", err);
-        statusEl.textContent =
-          "Error loading range analytics. See console for details.";
-        shiftBody.innerHTML =
-          '<tr><td colspan="6" class="error-text">Error loading shift data.</td></tr>';
-        attBody.innerHTML =
-          '<tr><td colspan="4" class="error-text">Error loading attendance data.</td></tr>';
-        setText("rangeCheckinsTotal", "–");
-        setText("rangeCheckinsWhatsApp", "–");
-        setText("rangeCheckinsOther", "–");
+      if (extraEl) {
+        const burnoutWards = Object.entries(wardOpenMap)
+          .filter(([, shortfall]) => shortfall >= 2)
+          .map(([ward]) => ward);
+
+        if (burnoutWards.length) {
+          extraEl.innerHTML =
+            '⚠️ Higher staffing strain in: <strong>' +
+            burnoutWards.join(', ') +
+            '</strong>. Today’s open shortfall: ' + todayOpenShortfall + '.';
+        } else if (overallOpenShortfall > 0) {
+          extraEl.textContent =
+            'Some open shifts remain, but no single ward has repeated large gaps.';
+        } else {
+          extraEl.textContent =
+            '✅ Staff wellbeing looks stable – no open shift gaps in the selected window.';
+        }
       }
     }
 
-    // -------------------------------
-    // Initialise everything
-    // -------------------------------
-    document.addEventListener("DOMContentLoaded", async () => {
-      // Footer year + today label
-      setText("footerYear", new Date().getFullYear().toString());
-      setText("todayDateLabel", "Fri, " + formatDateFriendly(todayISO()));
+    // ---------- AI ASSIGNMENT (REAL ENDPOINT) ----------
+    function renderAssignmentResults(shift, top, all) {
+      const summary = document.getElementById('assign-shift-summary');
+      const topList = document.getElementById('assign-top-list');
+      const fullList = document.getElementById('assign-full-list');
 
-      // Default date range: first of this month to today
-      const fromInput = document.getElementById("rangeFrom");
-      const toInput = document.getElementById("rangeTo");
-      if (fromInput && toInput) {
-        fromInput.value = firstOfMonthISO();
-        toInput.value = todayISO();
+      if (summary) {
+        if (!shift) {
+          summary.textContent = 'No shift found for that ID.';
+        } else {
+          summary.textContent =
+            `Shift ${shift.shift_ref || shift.id} · ` +
+            `${shift.role_required || ''} · ` +
+            `${shift.ward || ''} · ` +
+            `${formatDate(shift.shift_date)} ` +
+            `${(shift.start_time || '').toString().slice(0,5)}–` +
+            `${(shift.end_time || '').toString().slice(0,5)}`;
+        }
       }
 
-      // Button handler
-      const btn = document.getElementById("demoLoginBtn");
-      if (btn) {
-        btn.addEventListener("click", async () => {
-          try {
-            await demoLogin(true);
-            await Promise.all([
-              loadTodaySummary(),
-              loadTodayAttendance(),
-              loadAiInsight(),
-              loadRangeAnalytics(),
-            ]);
-          } catch (_) {
-            // errors already logged
+      if (topList) {
+        topList.innerHTML = '';
+        if (!top || !top.length) {
+          topList.innerHTML =
+            '<div style="font-size:0.8rem; color:var(--muted);">No recommended staff found for this shift.</div>';
+        } else {
+          top.forEach(item => {
+            const div = document.createElement('div');
+            div.className = 'assign-item';
+            const lastSeenStr = item.last_seen
+              ? `${formatDate(item.last_seen)} ${item.last_seen.toString().slice(11,16)}`
+              : 'no recent logs';
+
+            div.innerHTML = `
+              <div class="assign-name-line">
+                <span class="assign-name">${item.staff_name}</span>
+                <span class="assign-score">Score: ${item.score}</span>
+              </div>
+              <div class="assign-meta">
+                Last seen: ${lastSeenStr} · Total check-ins: ${item.total_checkins}
+              </div>
+              <div class="assign-reasons">
+                ${item.reasons && item.reasons.length ? item.reasons.join(' · ') : 'No specific reasons recorded'}
+              </div>
+            `;
+            topList.appendChild(div);
+          });
+        }
+      }
+
+      if (fullList) {
+        fullList.innerHTML = '';
+        if (!all || !all.length) {
+          fullList.innerHTML =
+            '<div style="font-size:0.8rem; color:var(--muted);">No staff in ranking list.</div>';
+        } else {
+          all.forEach((item, index) => {
+            const div = document.createElement('div');
+            div.className = 'assign-item';
+            const lastSeenStr = item.last_seen
+              ? `${formatDate(item.last_seen)} ${item.last_seen.toString().slice(11,16)}`
+              : 'no recent logs';
+
+            div.innerHTML = `
+              <div class="assign-name-line">
+                <span class="assign-name">#${index + 1} · ${item.staff_name}</span>
+                <span class="assign-score">Score: ${item.score}</span>
+              </div>
+              <div class="assign-meta">
+                Last seen: ${lastSeenStr} · Total check-ins: ${item.total_checkins}
+              </div>
+              <div class="assign-reasons">
+                ${item.reasons && item.reasons.length ? item.reasons.join(' · ') : 'No specific reasons recorded'}
+              </div>
+            `;
+            fullList.appendChild(div);
+          });
+        }
+      }
+    }
+
+    function setupAiAssignmentSection() {
+      const btn = document.getElementById('assign-fetch-btn');
+      const input = document.getElementById('assign-shift-id');
+      const errBox = document.getElementById('assign-error');
+      const okBox = document.getElementById('assign-ok');
+
+      if (!btn) return;
+
+      btn.addEventListener('click', async () => {
+        if (errBox) { errBox.style.display = 'none'; errBox.textContent = ''; }
+        if (okBox) { okBox.style.display = 'none'; okBox.textContent = ''; }
+
+        const topList = document.getElementById('assign-top-list');
+        const fullList = document.getElementById('assign-full-list');
+        const summary = document.getElementById('assign-shift-summary');
+
+        if (topList) topList.innerHTML = '';
+        if (fullList) fullList.innerHTML = '';
+        if (summary) summary.textContent = '';
+
+        const shiftId = input ? input.value.trim() : '';
+        if (!shiftId) {
+          if (errBox) {
+            errBox.textContent = 'Please enter a shift ID.';
+            errBox.style.display = 'block';
           }
+          return;
+        }
+
+        try {
+          const data = await apiGet('/api/ai/assign-shift/' + encodeURIComponent(shiftId));
+          console.log('AI assign result ->', data);
+
+          if (!data || data.error) {
+            if (errBox) {
+              errBox.textContent = data && data.error
+                ? data.error
+                : 'Failed to get assignment recommendations.';
+              errBox.style.display = 'block';
+            }
+            return;
+          }
+
+          renderAssignmentResults(data.shift, data.top, data.all);
+
+          if (okBox) {
+            okBox.textContent = 'AI-ranked staff list loaded for shift ID ' + shiftId + '.';
+            okBox.style.display = 'block';
+          }
+        } catch (err) {
+          console.error('Error calling /api/ai/assign-shift', err);
+          if (errBox) {
+            if (err.message === 'MISSING_TOKEN') {
+              errBox.textContent = 'Please click "Login as demo manager" before requesting recommendations.';
+            } else {
+              errBox.textContent = 'Error loading recommendations: ' + err.message;
+            }
+            errBox.style.display = 'block';
+          }
+        }
+      });
+    }
+
+    // ---------- DATE RANGE DEFAULTS ----------
+    function ensureDefaultRangeDates() {
+      const fromInput = document.getElementById('range-from');
+      const toInput = document.getElementById('range-to');
+      const today = new Date();
+      const sevenDaysAgo = new Date();
+      sevenDaysAgo.setDate(today.getDate() - 6);
+
+      const toStr = today.toISOString().slice(0, 10);
+      const fromStr = sevenDaysAgo.toISOString().slice(0, 10);
+
+      if (fromInput && !fromInput.value) fromInput.value = fromStr;
+      if (toInput && !toInput.value) toInput.value = toStr;
+
+      return { from: fromInput ? fromInput.value : fromStr, to: toInput ? toInput.value : toStr };
+    }
+
+    // ---------- MAIN LOADER ----------
+    async function loadAllDashboardData() {
+      const range = ensureDefaultRangeDates();
+
+      await Promise.allSettled([
+        loadTodayShiftsAndStats(),
+        loadTodayAttendance(),
+        loadRangeShiftsAndOverview(range.from, range.to),
+        loadRangeAttendance(range.from, range.to)
+      ]);
+
+      loadInsightToday();
+    }
+
+    // ---------- INIT ----------
+    document.addEventListener('DOMContentLoaded', () => {
+      const loginBtn = document.getElementById('demo-login-btn');
+      const rangeBtn = document.getElementById('range-apply-btn');
+
+      if (loginBtn) {
+        loginBtn.addEventListener('click', handleDemoLogin);
+      }
+
+      if (rangeBtn) {
+        rangeBtn.addEventListener('click', async () => {
+          const fromInput = document.getElementById('range-from');
+          const toInput = document.getElementById('range-to');
+          const from = fromInput && fromInput.value ? fromInput.value : null;
+          const to = toInput && toInput.value ? toInput.value : null;
+
+          if (!from || !to) {
+            alert('Please select both From and To dates before applying the range.');
+            return;
+          }
+
+          await Promise.allSettled([
+            loadRangeShiftsAndOverview(from, to),
+            loadRangeAttendance(from, to)
+          ]);
+
+          loadInsightToday();
         });
       }
 
-      // Auto-login once if token already exists (or first load)
-      try {
-        await demoLogin(false);
-        await Promise.all([
-          loadTodaySummary(),
-          loadTodayAttendance(),
-          loadAiInsight(),
-          loadRangeAnalytics(),
-        ]);
-      } catch (err) {
-        console.error("[DASHBOARD] Initial load error:", err);
+      setupAiAssignmentSection();
+
+      const existingToken = localStorage.getItem('jwtToken');
+      if (existingToken) {
+        setLoggedInUI(true);
+        loadAllDashboardData().catch(err => console.error(err));
+      } else {
+        setLoggedInUI(false);
       }
     });
   </script>

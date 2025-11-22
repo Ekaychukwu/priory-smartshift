@@ -105,22 +105,9 @@ app.get('/api/ai/insight', (req, res) => {
 });
 
 // ===============================
-// HEALTH CHECK
-// ===============================
-app.get('/', (_req, res) => {
-  res.json({ message: 'Priory SmartShift Express API running' });
-});
-
-// ===============================
-// START SERVER
-// ===============================
-app.listen(PORT, () => {
-  console.log(`Server listening on port ${PORT}`);
-});
-
-// ===============================
 // AI INSIGHT (STUB ENDPOINT)
-// Dashboard calls GET /api/test/ai/insight
+// Dashboard used to call GET /api/test/ai/insight
+// (still available if you need it for debugging)
 // ===============================
 function todayISOForInsight() {
   const d = new Date();
@@ -138,4 +125,102 @@ app.get('/api/test/ai/insight', (req, res) => {
   };
 
   res.json(payload);
+});
+
+// ===============================
+// AI SHIFT ASSIGNMENT (MOCK ENDPOINT)
+// Used by the Manager Dashboard "AI SHIFT ASSIGNMENT (EXPERIMENTAL)" card
+// URL: GET /api/ai/assign-shift/:shiftId
+// NOTE: This version uses mock data (no database) just to drive the UI.
+// ===============================
+app.get('/api/ai/assign-shift/:shiftId', (req, res) => {
+  const shiftId = parseInt(req.params.shiftId, 10);
+  if (!Number.isInteger(shiftId)) {
+    return res.status(400).json({ error: 'Invalid shift id' });
+  }
+
+  // In a later milestone we will pull real shift + staff data from Postgres.
+  // For now we return a simple, consistent mock so the front-end card works.
+
+  const today = new Date();
+  const todayISO = today.toISOString().slice(0, 10);
+
+  // Very rough mapping just to make it feel real.
+  let ward = 'Woodlands';
+  let role = 'Healthcare Assistant';
+  if (shiftId === 3 || shiftId === 7) ward = 'Evergreen';
+  if (shiftId === 5 || shiftId === 2) role = 'Registered Nurse';
+
+  const mockShift = {
+    id: shiftId,
+    organisation_id: 1,
+    shift_ref: `DEMO-${String(shiftId).padStart(3, '0')}`,
+    ward,
+    role_required: role,
+    shift_date: todayISO,
+    start_time: '08:00:00',
+    end_time: '20:00:00',
+    number_required: 2,
+    number_filled: 0,
+    gender_required: 'any',
+  };
+
+  const now = new Date();
+  const isoHoursAgo = (hours) =>
+    new Date(now.getTime() - hours * 60 * 60 * 1000).toISOString();
+
+  const candidates = [
+    {
+      staff_id: 3,
+      staff_name: 'Prince Opara',
+      score: 12,
+      last_seen: isoHoursAgo(2),
+      total_checkins: 8,
+      reasons: ['8 recent check-ins', 'worked very recently'],
+    },
+    {
+      staff_id: 5,
+      staff_name: 'Demo Staff RN',
+      score: 9,
+      last_seen: isoHoursAgo(16),
+      total_checkins: 5,
+      reasons: ['5 recent check-ins', 'worked within the last day'],
+    },
+    {
+      staff_id: 8,
+      staff_name: 'Bank HCA Evergreen',
+      score: 7,
+      last_seen: isoHoursAgo(36),
+      total_checkins: 4,
+      reasons: ['4 recent check-ins', 'worked within the last week'],
+    },
+    {
+      staff_id: 11,
+      staff_name: 'Agency Backup',
+      score: 3,
+      last_seen: isoHoursAgo(96),
+      total_checkins: 1,
+      reasons: ['very few recent check-ins', 'no very recent shifts'],
+    },
+  ];
+
+  res.json({
+    shift: mockShift,
+    top: candidates.slice(0, 3),
+    all: candidates,
+  });
+});
+
+// ===============================
+// HEALTH CHECK
+// ===============================
+app.get('/', (_req, res) => {
+  res.json({ message: 'Priory SmartShift Express API running' });
+});
+
+// ===============================
+// START SERVER
+// ===============================
+app.listen(PORT, () => {
+  console.log(`Server listening on port ${PORT}`);
 });
