@@ -1,4 +1,6 @@
-// index.js — Express-based server for Priory SmartShift
+// index.js — Priory SmartShift Express Server
+
+'use strict';
 
 const express = require('express');
 const path = require('path');
@@ -7,7 +9,9 @@ const jwt = require('jsonwebtoken');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// --- Core middleware ---
+// ===============================
+// CORE MIDDLEWARE
+// ===============================
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -47,7 +51,8 @@ app.get('/api/debug/test-token', (req, res) => {
     });
 
     return res.json({
-      info: 'DEV-ONLY token for testing protected endpoints. Do NOT use in production.',
+      info:
+        'DEV-ONLY token for testing protected endpoints. Do NOT use in production.',
       token,
       payload,
     });
@@ -59,7 +64,7 @@ app.get('/api/debug/test-token', (req, res) => {
 
 // ===============================
 // GLOBAL AUTH MIDDLEWARE
-// (applies AFTER public/static routes)
+// (must come AFTER public/static routes)
 // ===============================
 const authMiddleware = require('./src/middleware/auth');
 app.use(authMiddleware);
@@ -81,6 +86,13 @@ app.use('/api/manager', managerRoutes);
 // ===============================
 const shiftsRoutes = require('./src/routes/shiftsRoutes');
 app.use('/api/shifts', shiftsRoutes);
+
+// ===============================
+// SHIFT ASSIGNMENT ENGINE ROUTES
+// (NEW — required for next milestones)
+// ===============================
+const assignmentRoutes = require('./src/routes/managerAssignmentRoutes');
+app.use('/api/manager/assign', assignmentRoutes);
 
 // ===============================
 // DEBUG JWT-PROTECTED ROUTE
@@ -106,24 +118,23 @@ app.listen(PORT, () => {
   console.log(`Server listening on port ${PORT}`);
 });
 
-// --- AI Insight test endpoint (stub) ---
-// This keeps everything on port 3000.
-// The manager dashboard "AI Insight – Today" card calls GET /api/test/ai/insight.
-// For now this is a simple static/stub payload. Later we can plug in real logic.
-
+// ===============================
+// AI INSIGHT (STUB ENDPOINT)
+// Dashboard calls GET /api/test/ai/insight
+// ===============================
 function todayISOForInsight() {
   const d = new Date();
   return d.toISOString().slice(0, 10); // YYYY-MM-DD
 }
 
-app.get("/api/test/ai/insight", (req, res) => {
+app.get('/api/test/ai/insight', (req, res) => {
   const payload = {
-    summary: "neutral", // possible values later: "neutral" | "warning" | "critical"
+    summary: 'neutral',
     details: {
       forecast_date: todayISOForInsight(),
       expected_open_shifts: 7,
-      burnout_alerts: [] // e.g. ["Alder", "Woodlands"] later
-    }
+      burnout_alerts: [],
+    },
   };
 
   res.json(payload);
